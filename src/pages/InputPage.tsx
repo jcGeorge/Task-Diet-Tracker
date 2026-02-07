@@ -1,14 +1,28 @@
-import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { CaloriesByDateList } from "../components/CaloriesByDateList";
 import { SharedDateInput } from "../components/SharedDateInput";
+import { TimeSelector } from "../components/TimeSelector";
 import { useAppData } from "../context/AppDataContext";
 import { isDisplayDate, todayDisplayDate } from "../lib/date";
+import { formatTimeParts, type TimeParts } from "../lib/time";
 import { trackerKeys, trackerLabels, type TrackerKey } from "../types";
 
 function isTrackerKey(value: string): value is TrackerKey {
   return trackerKeys.includes(value as TrackerKey);
 }
+
+const DEFAULT_WAKE_TIME_PARTS: TimeParts = {
+  hour: "",
+  minute: "",
+  meridiem: "AM"
+};
+
+const DEFAULT_SLEEP_TIME_PARTS: TimeParts = {
+  hour: "",
+  minute: "",
+  meridiem: "PM"
+};
 
 export function InputPage() {
   const { trackerKey } = useParams();
@@ -20,8 +34,8 @@ export function InputPage() {
   const [carbsValue, setCarbsValue] = useState("");
   const [caloriesValue, setCaloriesValue] = useState("");
   const [caloriesNotes, setCaloriesNotes] = useState("");
-  const [sleepTime, setSleepTime] = useState("");
-  const [wakeTime, setWakeTime] = useState("");
+  const [sleepTime, setSleepTime] = useState<TimeParts>(DEFAULT_SLEEP_TIME_PARTS);
+  const [wakeTime, setWakeTime] = useState<TimeParts>(DEFAULT_WAKE_TIME_PARTS);
   const [moodStart, setMoodStart] = useState("");
   const [moodEnd, setMoodEnd] = useState("");
   const [moodNotes, setMoodNotes] = useState("");
@@ -33,10 +47,20 @@ export function InputPage() {
   const [selectedChoreIds, setSelectedChoreIds] = useState<string[]>([]);
   const [choreNotes, setChoreNotes] = useState("");
   const [selectedSubstanceIds, setSelectedSubstanceIds] = useState<string[]>([]);
-  const [substanceNotes, setSubstanceNotes] = useState("");
+  const [entertainmentMinutesById, setEntertainmentMinutesById] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<{ tone: "success" | "danger"; message: string } | null>(null);
   const [isToastHovered, setIsToastHovered] = useState(false);
   const [hasToastBeenHovered, setHasToastBeenHovered] = useState(false);
+  const entertainmentLabelWidthCh = useMemo(() => {
+    const maxLength = data.meta.entertainment.reduce((max, item) => Math.max(max, item.name.length), 0);
+    return Math.min(Math.max(maxLength + 4, 14), 30);
+  }, [data.meta.entertainment]);
+  const entertainmentWidthStyle = useMemo<CSSProperties>(
+    () => ({
+      ["--entertainment-label-width" as string]: `${entertainmentLabelWidthCh}ch`
+    }),
+    [entertainmentLabelWidthCh]
+  );
 
   if (!trackerKey || !isTrackerKey(trackerKey)) {
     return <Navigate to="/" replace />;
@@ -75,6 +99,13 @@ export function InputPage() {
     return parsed;
   }
 
+  function parseOptionalMinutesInRange(value: string, min: number, max: number): number | null {
+    if (value.trim() === "") {
+      return 0;
+    }
+    return parseNumberInRange(value, min, max);
+  }
+
   function normalizeNumberText(value: number): string {
     if (Number.isInteger(value)) {
       return String(value);
@@ -107,6 +138,13 @@ export function InputPage() {
 
   function nudgeHomeworkMinutes(delta: 5 | -5): void {
     setHomeworkMinutes((previous) => stepMinuteValue(previous, delta));
+  }
+
+  function nudgeEntertainmentMinutes(itemId: string, delta: 5 | -5): void {
+    setEntertainmentMinutesById((previous) => ({
+      ...previous,
+      [itemId]: stepMinuteValue(previous[itemId] ?? "", delta)
+    }));
   }
 
   function showError(text: string): void {
@@ -159,8 +197,8 @@ export function InputPage() {
         setCaloriesNotes("");
         break;
       case "sleep":
-        setSleepTime("");
-        setWakeTime("");
+        setSleepTime(DEFAULT_SLEEP_TIME_PARTS);
+        setWakeTime(DEFAULT_WAKE_TIME_PARTS);
         break;
       case "mood":
         setMoodStart("");
@@ -182,7 +220,9 @@ export function InputPage() {
         break;
       case "substances":
         setSelectedSubstanceIds([]);
-        setSubstanceNotes("");
+        break;
+      case "entertainment":
+        setEntertainmentMinutesById({});
         break;
       default:
         break;
@@ -256,8 +296,8 @@ export function InputPage() {
     }
 
     if (trackerKey === "sleep") {
-      const nextSleepTime = sleepTime.trim();
-      const nextWakeTime = wakeTime.trim();
+      const nextSleepTime = formatTimeParts(sleepTime);
+      const nextWakeTime = formatTimeParts(wakeTime);
       if (!nextSleepTime || !nextWakeTime) {
         showError("Sleep and wake times are required.");
         return;
@@ -289,7 +329,7 @@ export function InputPage() {
     if (trackerKey === "workouts") {
       const activities = Object.entries(workoutMinutesById).map(([metaId, minutes]) => ({
         metaId,
-        minutes: parseNumberInRange(minutes, 0, 1440)
+        minutes: parseOptionalMinutesInRange(minutes, 0, 1440)
       }));
       if (activities.length === 0) {
         showError("Select at least one workout.");
@@ -300,9 +340,15 @@ export function InputPage() {
         return;
       }
 
+      const nonZeroActivities = activities.filter((activity) => (activity.minutes ?? 0) > 0);
+      if (nonZeroActivities.length === 0) {
+        showError("Enter at least one workout with minutes greater than 0.");
+        return;
+      }
+
       addTrackerEntry("workouts", {
         date,
-        activities: activities.map((activity) => ({ metaId: activity.metaId, minutes: activity.minutes ?? 0 }))
+        activities: nonZeroActivities.map((activity) => ({ metaId: activity.metaId, minutes: activity.minutes ?? 0 }))
       });
       resetNonDateFields("workouts");
       showSuccess(`Workout entry added for ${date}.`);
@@ -361,10 +407,39 @@ export function InputPage() {
       addTrackerEntry("substances", {
         date,
         substanceIds: selectedSubstanceIds,
-        notes: substanceNotes.trim()
+        notes: ""
       });
       resetNonDateFields("substances");
       showSuccess(`Substances entry added for ${date}.`);
+      return;
+    }
+
+    if (trackerKey === "entertainment") {
+      const activities = Object.entries(entertainmentMinutesById).map(([metaId, minutes]) => ({
+        metaId,
+        minutes: parseOptionalMinutesInRange(minutes, 0, 1440)
+      }));
+      if (activities.length === 0) {
+        showError("Select at least one entertainment item.");
+        return;
+      }
+      if (activities.some((activity) => activity.minutes === null)) {
+        showError("Each entertainment minutes value must be a number between 0 and 1440.");
+        return;
+      }
+
+      const nonZeroActivities = activities.filter((activity) => (activity.minutes ?? 0) > 0);
+      if (nonZeroActivities.length === 0) {
+        showError("Enter at least one entertainment item with minutes greater than 0.");
+        return;
+      }
+
+      addTrackerEntry("entertainment", {
+        date,
+        activities: nonZeroActivities.map((activity) => ({ metaId: activity.metaId, minutes: activity.minutes ?? 0 }))
+      });
+      resetNonDateFields("entertainment");
+      showSuccess(`Entertainment entry added for ${date}.`);
     }
   };
 
@@ -395,7 +470,6 @@ export function InputPage() {
         <div className="card border-0 shadow-sm">
           <form className="card-body" onSubmit={handleFormSubmit} onKeyDown={handleFormKeyDown}>
             <h1 className="h4 mb-2">{trackerLabels[trackerKey]} Entry</h1>
-            <p className="text-secondary mb-3">Inputs are managed separately from tracker views.</p>
 
             <SharedDateInput id="entry-date" label="Date" value={date} onChange={setDate} required allowDayStepper />
 
@@ -527,10 +601,10 @@ export function InputPage() {
                               {item.name}
                             </button>
                             {isSelected ? (
-                              <div className="d-flex align-items-center gap-2 workout-minute-controls">
+                              <div className="d-flex align-items-center gap-2 workout-minute-controls minutes-control-row">
                                 <input
                                   type="number"
-                                  className="form-control form-control-sm shared-date-input minutes-selector-input"
+                                  className="form-control shared-date-input minutes-selector-input"
                                   min={0}
                                   max={1440}
                                   step="any"
@@ -555,7 +629,7 @@ export function InputPage() {
                                 >
                                   +
                                 </button>
-                                <span className="small text-secondary mb-0">minutes</span>
+                                <span className="text-secondary mb-0 minutes-unit-label">minutes</span>
                               </div>
                             ) : null}
                           </div>
@@ -569,32 +643,13 @@ export function InputPage() {
 
             {trackerKey === "sleep" ? (
               <>
-                <div className="mb-3">
-                  <label htmlFor="sleep-time" className="form-label fw-semibold">
-                    Time of Sleep (Previous Day)
-                  </label>
-                  <input
-                    id="sleep-time"
-                    type="text"
-                    className="form-control shared-date-input"
-                    value={sleepTime}
-                    placeholder="e.g. 11:30 PM"
-                    onChange={(event) => setSleepTime(event.target.value)}
-                  />
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="wake-time" className="form-label fw-semibold">
-                    Wake Up Time
-                  </label>
-                  <input
-                    id="wake-time"
-                    type="text"
-                    className="form-control shared-date-input"
-                    value={wakeTime}
-                    placeholder="e.g. 06:15 AM"
-                    onChange={(event) => setWakeTime(event.target.value)}
-                  />
-                </div>
+                <TimeSelector
+                  idPrefix="sleep-time"
+                  label="Time of Sleep"
+                  value={sleepTime}
+                  onChange={setSleepTime}
+                />
+                <TimeSelector idPrefix="wake-time" label="Wake Up Time" value={wakeTime} onChange={setWakeTime} />
               </>
             ) : null}
 
@@ -693,7 +748,7 @@ export function InputPage() {
                       <label htmlFor="homework-minutes" className="form-label fw-semibold">
                         Minutes
                       </label>
-                      <div className="d-flex align-items-center gap-2">
+                      <div className="d-flex align-items-center gap-2 minutes-control-row">
                         <input
                           id="homework-minutes"
                           type="number"
@@ -808,19 +863,81 @@ export function InputPage() {
                         })}
                       </div>
                     </div>
-                    <div className="mb-3">
-                      <label htmlFor="substance-notes" className="form-label fw-semibold">
-                        Notes
-                      </label>
-                      <textarea
-                        id="substance-notes"
-                        className="form-control"
-                        rows={3}
-                        value={substanceNotes}
-                        onChange={(event) => setSubstanceNotes(event.target.value)}
-                      />
-                    </div>
                   </>
+                )}
+              </>
+            ) : null}
+
+            {trackerKey === "entertainment" ? (
+              <>
+                {data.meta.entertainment.length === 0 ? (
+                  <div className="alert alert-warning">
+                    Add entertainment options in Meta first. <Link to="/settings/meta">Open Metadata</Link>
+                  </div>
+                ) : (
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Entertainment</label>
+                    <div className="d-flex flex-column gap-2">
+                      {data.meta.entertainment.map((item) => {
+                        const isSelected = entertainmentMinutesById[item.id] !== undefined;
+                        return (
+                          <div key={item.id} className="workout-minute-row entertainment-minute-row" style={entertainmentWidthStyle}>
+                            <button
+                              type="button"
+                              className={`btn workout-toggle-btn entertainment-toggle-btn ${isSelected ? "btn-primary" : "flag-toggle"}`}
+                              onClick={() =>
+                                setEntertainmentMinutesById((previous) => {
+                                  if (previous[item.id] !== undefined) {
+                                    const next = { ...previous };
+                                    delete next[item.id];
+                                    return next;
+                                  }
+                                  return { ...previous, [item.id]: "0" };
+                                })
+                              }
+                            >
+                              {item.name}
+                            </button>
+                            {isSelected ? (
+                              <div className="d-flex align-items-center gap-2 workout-minute-controls minutes-control-row">
+                                <input
+                                  type="number"
+                                  className="form-control shared-date-input minutes-selector-input"
+                                  min={0}
+                                  max={1440}
+                                  step="any"
+                                  value={entertainmentMinutesById[item.id]}
+                                  onChange={(event) =>
+                                    setEntertainmentMinutesById((previous) => ({
+                                      ...previous,
+                                      [item.id]: event.target.value
+                                    }))
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-secondary btn-sm minutes-step-btn"
+                                  aria-label={`Subtract 5 minutes from ${item.name}`}
+                                  onClick={() => nudgeEntertainmentMinutes(item.id, -5)}
+                                >
+                                  -
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-secondary btn-sm minutes-step-btn"
+                                  aria-label={`Add 5 minutes to ${item.name}`}
+                                  onClick={() => nudgeEntertainmentMinutes(item.id, 5)}
+                                >
+                                  +
+                                </button>
+                                <span className="text-secondary mb-0 minutes-unit-label">minutes</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
               </>
             ) : null}

@@ -12,6 +12,8 @@ export function getMetaItemUsageCount(data: AppData, listKey: MetaListKey, itemI
       return data.trackers.cleaning.filter((entry) => entry.choreIds.includes(itemId)).length;
     case "substances":
       return data.trackers.substances.filter((entry) => entry.substanceIds.includes(itemId)).length;
+    case "entertainment":
+      return data.trackers.entertainment.filter((entry) => entry.activities.some((activity) => activity.metaId === itemId)).length;
     default:
       return 0;
   }

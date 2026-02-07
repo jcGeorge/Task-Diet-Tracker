@@ -118,6 +118,26 @@ html[data-bs-theme="dark"] .form-select.tracker-select-active:focus {
   min-width: 180px;
 }
 
+.shared-time-input {
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.shared-time-input .form-select {
+  min-width: 0;
+}
+
+.time-select-box {
+  flex: 0 0 8.8rem;
+  width: 8.8rem;
+  min-width: 8.8rem;
+}
+
+.time-select-separator {
+  font-size: 1rem;
+}
+
 .shared-date-input-row .shared-date-input {
   flex: 0 1 40%;
 }
@@ -129,8 +149,10 @@ html[data-bs-theme="dark"] .form-select.tracker-select-active:focus {
 }
 
 .minutes-selector-input {
-  width: 16%;
-  min-width: 92px;
+  flex: 0 0 8.8rem;
+  width: 8.8rem;
+  min-width: 8.8rem;
+  font-size: 1.02rem;
 }
 
 .workout-minute-row {
@@ -146,21 +168,49 @@ html[data-bs-theme="dark"] .form-select.tracker-select-active:focus {
   text-align: left;
 }
 
+.entertainment-minute-row {
+  grid-template-columns: var(--entertainment-label-width, 130px) auto;
+}
+
+.entertainment-toggle-btn {
+  width: var(--entertainment-label-width, 130px);
+  white-space: nowrap;
+}
+
+.entertainment-minute-row .minutes-selector-input {
+  flex: 0 0 var(--entertainment-label-width, 130px);
+  width: var(--entertainment-label-width, 130px);
+  min-width: var(--entertainment-label-width, 130px);
+}
+
 .workout-minute-controls {
   min-width: 0;
 }
 
+.minutes-control-row {
+  min-height: 2.75rem;
+}
+
 .minutes-step-btn {
-  min-width: 2.4rem;
+  min-width: 3rem;
+  min-height: 2.75rem;
+  height: 2.75rem;
   align-self: stretch;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.55rem;
   font-weight: 700;
   line-height: 1;
-  padding-left: 0.55rem;
-  padding-right: 0.55rem;
+  padding-left: 0.7rem;
+  padding-right: 0.7rem;
+}
+
+.minutes-unit-label {
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .app-body {
@@ -229,6 +279,10 @@ html[data-bs-theme="dark"] .form-select.tracker-select-active:focus {
 .meta-usage-btn {
   min-width: 5.4rem;
   text-align: left;
+}
+
+.tracker-add-entry-btn {
+  padding-right: calc(var(--bs-btn-padding-x) + 5px);
 }
 
 .input-action-row {
@@ -303,6 +357,16 @@ html[data-bs-theme="dark"] .entry-form-divider {
 
 .threshold-chart-wrap {
   width: 100%;
+}
+
+.homework-chart-student-select {
+  width: 220px;
+  min-width: 220px;
+}
+
+.homework-tracker-student-select {
+  width: 180px;
+  min-width: 180px;
 }
 
 .workouts-composition-svg {
@@ -408,6 +472,18 @@ html[data-bs-theme="dark"] .entry-form-divider {
   gap: 0.65rem;
 }
 
+.graph-date-filter {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.graph-date-filter-input {
+  width: 10.5rem;
+}
+
 .graph-metric {
   border: 1px solid var(--app-border);
   border-radius: 0.55rem;
@@ -477,6 +553,12 @@ html[data-bs-theme="light"] .form-control[type="date"]::-webkit-calendar-picker-
     flex: 1;
   }
 
+  .homework-chart-student-select,
+  .homework-tracker-student-select {
+    width: 100%;
+    min-width: 0;
+  }
+
   .meta-row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.45rem;
@@ -499,15 +581,42 @@ html[data-bs-theme="light"] .form-control[type="date"]::-webkit-calendar-picker-
     width: 100%;
   }
 
+  .shared-time-input {
+    width: max-content;
+    max-width: 100%;
+  }
+
+  .time-select-box {
+    flex: 0 0 8.2rem;
+    width: 8.2rem;
+    min-width: 8.2rem;
+  }
+
   .shared-date-input-row .shared-date-input {
     flex: 1 1 auto;
     width: auto;
     min-width: 0;
   }
 
+  .graph-date-filter {
+    align-items: stretch;
+  }
+
+  .graph-date-filter-input {
+    width: 100%;
+    max-width: none;
+  }
+
   .minutes-selector-input {
-    width: 40%;
-    min-width: 0;
+    flex: 0 0 8rem;
+    width: 8rem;
+    min-width: 8rem;
+  }
+
+  .entertainment-minute-row .minutes-selector-input {
+    flex: 0 0 8rem;
+    width: 8rem;
+    min-width: 8rem;
   }
 
   .workout-minute-row {
@@ -515,7 +624,15 @@ html[data-bs-theme="light"] .form-control[type="date"]::-webkit-calendar-picker-
     row-gap: 0.45rem;
   }
 
+  .entertainment-minute-row {
+    grid-template-columns: 1fr;
+  }
+
   .workout-toggle-btn {
+    width: 100%;
+  }
+
+  .entertainment-toggle-btn {
     width: 100%;
   }
 

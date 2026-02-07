@@ -13,9 +13,10 @@ type TrackerKey =
   | "mood"
   | "homework"
   | "cleaning"
-  | "substances";
+  | "substances"
+  | "entertainment";
 type ThemeMode = "light" | "dark";
-type MetaListKey = "workouts" | "subjects" | "children" | "chores" | "substances";
+type MetaListKey = "workouts" | "subjects" | "children" | "chores" | "substances" | "entertainment";
 
 interface BaseTrackerEntry {
   id: string;
@@ -75,6 +76,10 @@ interface SubstanceEntry extends BaseTrackerEntry {
   notes: string;
 }
 
+interface EntertainmentEntry extends BaseTrackerEntry {
+  activities: Array<{ metaId: string; minutes: number }>;
+}
+
 interface MetaItem {
   id: string;
   name: string;
@@ -101,6 +106,7 @@ interface AppData {
     children: MetaItem[];
     chores: MetaItem[];
     substances: MetaItem[];
+    entertainment: MetaItem[];
   };
   trackers: {
     weight: WeightEntry[];
@@ -114,6 +120,7 @@ interface AppData {
     homework: HomeworkEntry[];
     cleaning: ChoreEntry[];
     substances: SubstanceEntry[];
+    entertainment: EntertainmentEntry[];
   };
   updatedAt: string;
 }
@@ -129,7 +136,8 @@ const TRACKER_KEYS: TrackerKey[] = [
   "mood",
   "homework",
   "cleaning",
-  "substances"
+  "substances",
+  "entertainment"
 ];
 
 const DISPLAY_DATE_REGEX = /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/;
@@ -158,7 +166,8 @@ function createDefaultData(): AppData {
       subjects: [],
       children: [],
       chores: [],
-      substances: []
+      substances: [],
+      entertainment: []
     },
     trackers: {
       weight: [],
@@ -171,7 +180,8 @@ function createDefaultData(): AppData {
       mood: [],
       homework: [],
       cleaning: [],
-      substances: []
+      substances: [],
+      entertainment: []
     },
     updatedAt: new Date().toISOString()
   };
@@ -308,7 +318,8 @@ function sanitizeData(value: unknown): AppData {
     subjects: sanitizeMetaList(metaRaw.subjects),
     children: sanitizeMetaList(metaRaw.children),
     chores: sanitizeMetaList(metaRaw.chores),
-    substances: sanitizeMetaList(metaRaw.substances)
+    substances: sanitizeMetaList(metaRaw.substances),
+    entertainment: sanitizeMetaList(metaRaw.entertainment)
   };
 
   const weight = getRawEntryList(trackersRaw, "weight")
@@ -337,10 +348,7 @@ function sanitizeData(value: unknown): AppData {
     })
     .filter((entry): entry is FastingEntry => entry !== null);
 
-  const carbsRaw = getRawEntryList(trackersRaw, "carbs");
-  const legacyEntertainmentRaw = getRawEntryList(trackersRaw, "entertainment");
-  const carbsSource = carbsRaw.length > 0 ? carbsRaw : legacyEntertainmentRaw;
-  const carbs = carbsSource
+  const carbs = getRawEntryList(trackersRaw, "carbs")
     .map((entry) => {
       const base = parseBaseEntry(entry);
       if (!base || !isRecord(entry)) {
@@ -485,6 +493,41 @@ function sanitizeData(value: unknown): AppData {
     })
     .filter((entry): entry is SubstanceEntry => entry !== null);
 
+  const entertainment = getRawEntryList(trackersRaw, "entertainment")
+    .map((entry) => {
+      const base = parseBaseEntry(entry);
+      if (!base || !isRecord(entry)) {
+        return null;
+      }
+
+      const activities = Array.isArray(entry.activities)
+        ? entry.activities
+            .map((activity) => {
+              if (!isRecord(activity)) {
+                return null;
+              }
+              const metaId = parseText(activity.metaId);
+              if (!metaId) {
+                return null;
+              }
+              return {
+                metaId,
+                minutes: parseRangedNumber(activity.minutes, 0, 1440, 0)
+              };
+            })
+            .filter((activity): activity is { metaId: string; minutes: number } => activity !== null)
+        : [];
+
+      const legacyIds = parseStringList(entry.entertainmentIds);
+      const legacyActivities = legacyIds.map((metaId) => ({ metaId, minutes: 0 }));
+
+      return {
+        ...base,
+        activities: activities.length > 0 ? activities : legacyActivities
+      } satisfies EntertainmentEntry;
+    })
+    .filter((entry): entry is EntertainmentEntry => entry !== null);
+
   return {
     version: 2,
     settings: {
@@ -510,7 +553,8 @@ function sanitizeData(value: unknown): AppData {
       mood,
       homework,
       cleaning,
-      substances
+      substances,
+      entertainment
     },
     updatedAt: new Date().toISOString()
   };

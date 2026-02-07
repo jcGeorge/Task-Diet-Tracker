@@ -13,7 +13,8 @@ const hubOrder: TrackerKey[] = [
   "sleep",
   "cleaning",
   "homework",
-  "substances"
+  "substances",
+  "entertainment"
 ];
 
 export function HomePage() {
@@ -23,7 +24,7 @@ export function HomePage() {
     <section>
       <div className="card border-0 shadow-sm mb-3 hero-card">
         <div className="card-body">
-          <h1 className="h3 mb-2">Task / Diet Hub</h1>
+          <h1 className="h3 mb-2">Task & Diet Hub</h1>
           <p className="mb-0 text-secondary">Track daily progress across health and productivity categories.</p>
         </div>
       </div>

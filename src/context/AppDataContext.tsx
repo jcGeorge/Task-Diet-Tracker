@@ -155,7 +155,8 @@ export function AppDataProvider({ children }: PropsWithChildren) {
         mood: [],
         homework: [],
         cleaning: [],
-        substances: []
+        substances: [],
+        entertainment: []
       };
 
       return stamp({
@@ -187,6 +188,9 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       const remainingHomework = previous.trackers.homework.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingCleaning = previous.trackers.cleaning.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingSubstances = previous.trackers.substances.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
+      const remainingEntertainment = previous.trackers.entertainment.filter(
+        (entry) => displayDateToIso(entry.date) >= cutoffIsoDate
+      );
 
       removedCount += previous.trackers.weight.length - remainingWeight.length;
       removedCount += previous.trackers.fasting.length - remainingFasting.length;
@@ -199,6 +203,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       removedCount += previous.trackers.homework.length - remainingHomework.length;
       removedCount += previous.trackers.cleaning.length - remainingCleaning.length;
       removedCount += previous.trackers.substances.length - remainingSubstances.length;
+      removedCount += previous.trackers.entertainment.length - remainingEntertainment.length;
 
       if (removedCount === 0) {
         return previous;
@@ -215,7 +220,8 @@ export function AppDataProvider({ children }: PropsWithChildren) {
         mood: remainingMood,
         homework: remainingHomework,
         cleaning: remainingCleaning,
-        substances: remainingSubstances
+        substances: remainingSubstances,
+        entertainment: remainingEntertainment
       };
 
       return stamp({

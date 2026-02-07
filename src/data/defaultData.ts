@@ -12,7 +12,8 @@ function buildEmptyTrackers(): { [K in TrackerKey]: TrackerEntryByKey[K][] } {
     mood: [],
     homework: [],
     cleaning: [],
-    substances: []
+    substances: [],
+    entertainment: []
   };
 }
 
@@ -22,13 +23,15 @@ function buildEmptyMetaItems(): {
   children: MetaItem[];
   chores: MetaItem[];
   substances: MetaItem[];
+  entertainment: MetaItem[];
 } {
   return {
     workouts: [],
     subjects: [],
     children: [],
     chores: [],
-    substances: []
+    substances: [],
+    entertainment: []
   };
 }
 

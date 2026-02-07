@@ -27,7 +27,8 @@ function buildBackupDataBeforeDate(source: AppData, beforeDate: string): AppData
         mood: [],
         homework: [],
         cleaning: [],
-        substances: []
+        substances: [],
+        entertainment: []
       },
       updatedAt: new Date().toISOString()
     };
@@ -44,7 +45,8 @@ function buildBackupDataBeforeDate(source: AppData, beforeDate: string): AppData
     mood: source.trackers.mood.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
     homework: source.trackers.homework.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
     cleaning: source.trackers.cleaning.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
-    substances: source.trackers.substances.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate)
+    substances: source.trackers.substances.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    entertainment: source.trackers.entertainment.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate)
   };
 
   return {

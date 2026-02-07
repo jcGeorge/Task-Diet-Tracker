@@ -8,13 +8,14 @@ import { metaLabels, type MetaListKey } from "../types";
 
 type Notice = { tone: "success" | "danger"; message: string } | null;
 
-const allMetaSections: MetaListKey[] = ["workouts", "subjects", "children", "chores", "substances"];
+const allMetaSections: MetaListKey[] = ["workouts", "subjects", "children", "chores", "substances", "entertainment"];
 const singularLabels: Record<MetaListKey, string> = {
   workouts: "workout",
   subjects: "subject",
   children: "student",
   chores: "chore",
-  substances: "substance"
+  substances: "substance",
+  entertainment: "entertainment"
 };
 
 export function MetaPage() {
@@ -24,7 +25,8 @@ export function MetaPage() {
     subjects: "",
     children: "",
     chores: "",
-    substances: ""
+    substances: "",
+    entertainment: ""
   });
   const [editDrafts, setEditDrafts] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<Notice>(null);
@@ -173,8 +175,13 @@ export function MetaPage() {
                 <button
                   type="button"
                   className="btn btn-outline-danger btn-sm"
-                  disabled={usageCount > 0}
-                  onClick={() => handleDelete(listKey, item.id)}
+                  onClick={() => {
+                    if (usageCount > 0) {
+                      setNotice({ tone: "danger", message: "This item is used by existing entries and cannot be deleted." });
+                      return;
+                    }
+                    handleDelete(listKey, item.id);
+                  }}
                 >
                   Delete
                 </button>
@@ -205,7 +212,7 @@ export function MetaPage() {
               </Link>
             </div>
             <p className="text-secondary mb-0 mt-2">
-              Manage list items used by Workouts, Homework Subjects and Students, Chores, and Substances.
+              Manage list items used by Workouts, Homework Subjects and Students, Chores, Substances, and Entertainment.
             </p>
           </div>
         </div>
@@ -409,6 +416,12 @@ export function MetaPage() {
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">{renderMetaListEditor("substances")}</div>
+            </div>
+          </div>
+
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">{renderMetaListEditor("entertainment")}</div>
             </div>
           </div>
         </div>

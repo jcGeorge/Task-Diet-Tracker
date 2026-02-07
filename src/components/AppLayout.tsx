@@ -37,23 +37,74 @@ export function AppLayout() {
   const isInputRoute = pathname.startsWith("/input/");
   const isSettingsRoute = pathname === "/settings";
   const isMetadataRoute = pathname === "/settings/meta";
+  const activeRouteKey = isTrackerRoute ? activeTracker : isInputRoute ? activeInput : "";
+  const showRouteStepper = (isTrackerRoute || isInputRoute) && isTrackerKey(activeRouteKey);
+
+  function stepRoute(direction: -1 | 1) {
+    if (!showRouteStepper) {
+      return;
+    }
+
+    const currentIndex = dropdownTrackerKeys.indexOf(activeRouteKey);
+    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+    const nextIndex = (safeIndex + direction + dropdownTrackerKeys.length) % dropdownTrackerKeys.length;
+    const nextTrackerKey = dropdownTrackerKeys[nextIndex];
+    const basePath = isTrackerRoute ? "/tracker/" : "/input/";
+    navigate(`${basePath}${nextTrackerKey}`);
+  }
 
   return (
     <div className="app-shell">
       <header className="app-header sticky-top">
         <nav className="navbar navbar-expand-lg">
           <div className="container-fluid app-toolbar">
-            <button
-              className="btn btn-outline-secondary settings-btn header-left-btn"
-              type="button"
-              aria-label="Theme"
-              title="Theme"
-              onClick={() => updateSettings({ theme: isLightTheme ? "dark" : "light" })}
-            >
-              <i className={`bi ${isLightTheme ? "bi-sun-fill" : "bi-moon-fill"}`} aria-hidden="true" />
-            </button>
+            <div className="d-flex align-items-center gap-2">
+              <button
+                className="btn btn-outline-secondary settings-btn header-left-btn"
+                type="button"
+                aria-label="Theme"
+                title="Theme"
+                onClick={() => updateSettings({ theme: isLightTheme ? "dark" : "light" })}
+              >
+                <i className={`bi ${isLightTheme ? "bi-sun-fill" : "bi-moon-fill"}`} aria-hidden="true" />
+              </button>
+
+              {showRouteStepper ? (
+                <>
+                  <button
+                    className="btn btn-outline-secondary settings-btn"
+                    type="button"
+                    aria-label={isTrackerRoute ? "Previous tracker" : "Previous input"}
+                    title={isTrackerRoute ? "Previous tracker" : "Previous input"}
+                    onClick={() => stepRoute(-1)}
+                  >
+                    <i className="bi bi-chevron-left" aria-hidden="true" />
+                  </button>
+                  <button
+                    className="btn btn-outline-secondary settings-btn"
+                    type="button"
+                    aria-label={isTrackerRoute ? "Next tracker" : "Next input"}
+                    title={isTrackerRoute ? "Next tracker" : "Next input"}
+                    onClick={() => stepRoute(1)}
+                  >
+                    <i className="bi bi-chevron-right" aria-hidden="true" />
+                  </button>
+                </>
+              ) : null}
+            </div>
 
             <div className="toolbar-controls">
+              <button
+                className={`btn btn-outline-secondary settings-btn ${isHomeRoute ? "toolbar-btn-active" : ""}`}
+                type="button"
+                aria-label="Home"
+                title="Home"
+                aria-current={isHomeRoute ? "page" : undefined}
+                onClick={() => navigate("/")}
+              >
+                <i className="bi bi-house-fill" aria-hidden="true" />
+              </button>
+
               <label htmlFor="tracker-nav" className="visually-hidden">
                 Select tracker
               </label>
@@ -95,17 +146,6 @@ export function AppLayout() {
                   </option>
                 ))}
               </select>
-
-              <button
-                className={`btn btn-outline-secondary settings-btn ${isHomeRoute ? "toolbar-btn-active" : ""}`}
-                type="button"
-                aria-label="Home"
-                title="Home"
-                aria-current={isHomeRoute ? "page" : undefined}
-                onClick={() => navigate("/")}
-              >
-                <i className="bi bi-house-fill" aria-hidden="true" />
-              </button>
 
               <button
                 className={`btn btn-outline-secondary settings-btn ${isMetadataRoute ? "toolbar-btn-active" : ""}`}

@@ -1,23 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { MetaItem, ThemeMode, WorkoutEntry } from "../types";
+import type { EntertainmentEntry, MetaItem, ThemeMode } from "../types";
 
-interface WorkoutsCompositionChartProps {
-  entries: WorkoutEntry[];
-  workouts: MetaItem[];
+interface EntertainmentCompositionChartProps {
+  entries: EntertainmentEntry[];
+  entertainment: MetaItem[];
   theme: ThemeMode;
 }
 
-type WorkoutsChartStyle = "donut" | "pie";
+type EntertainmentChartStyle = "donut" | "pie";
 
-interface WorkoutTotal {
+interface EntertainmentTotal {
   id: string;
   name: string;
   minutes: number;
 }
 
 interface SlicePoint {
-  workout: WorkoutTotal;
+  item: EntertainmentTotal;
   startAngle: number;
   endAngle: number;
   percentage: number;
@@ -25,7 +25,7 @@ interface SlicePoint {
   color: string;
 }
 
-const STORAGE_KEY = "task-diet-tracker.workouts-chart-style";
+const STORAGE_KEY = "task-diet-tracker.entertainment-chart-style";
 const CHART_WIDTH = 920;
 const CHART_HEIGHT = 360;
 const CENTER_X = CHART_WIDTH / 2;
@@ -128,14 +128,14 @@ function formatDuration(totalMinutes: number): string {
   return parts.join(", ");
 }
 
-function readSavedChartStyle(): WorkoutsChartStyle {
+function readSavedChartStyle(): EntertainmentChartStyle {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw === "pie" || raw === "donut") {
       return raw;
     }
   } catch {
-    // Ignore localStorage access failures and fall back to default.
+    // Ignore localStorage failures.
   }
   return "pie";
 }
@@ -180,9 +180,9 @@ function makeDonutPath(
   ].join(" ");
 }
 
-export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsCompositionChartProps) {
-  const [chartStyle, setChartStyle] = useState<WorkoutsChartStyle>(() => readSavedChartStyle());
-  const [hoveredWorkoutId, setHoveredWorkoutId] = useState<string | null>(null);
+export function EntertainmentCompositionChart({ entries, entertainment, theme }: EntertainmentCompositionChartProps) {
+  const [chartStyle, setChartStyle] = useState<EntertainmentChartStyle>(() => readSavedChartStyle());
+  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
   const [tooltipAnchor, setTooltipAnchor] = useState<{ x: number; y: number } | null>(null);
   const sliceColors = theme === "light" ? SLICE_COLORS_LIGHT : SLICE_COLORS_DARK;
 
@@ -190,36 +190,33 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
     try {
       window.localStorage.setItem(STORAGE_KEY, chartStyle);
     } catch {
-      // Ignore localStorage write failures.
+      // Ignore localStorage failures.
     }
   }, [chartStyle]);
 
-  const workoutTotals = useMemo<WorkoutTotal[]>(() => {
-    const workoutNames = new Map<string, string>(workouts.map((item) => [item.id, item.name]));
-    const totals = new Map<string, number>();
+  const totals = useMemo<EntertainmentTotal[]>(() => {
+    const namesById = new Map<string, string>(entertainment.map((item) => [item.id, item.name]));
+    const totalsById = new Map<string, number>();
 
     for (const entry of entries) {
       for (const activity of entry.activities) {
-        if (!Number.isFinite(activity.minutes) || activity.minutes <= 0) {
+        if (!Number.isFinite(activity.minutes) || activity.minutes <= 0 || !namesById.has(activity.metaId)) {
           continue;
         }
-        totals.set(activity.metaId, (totals.get(activity.metaId) ?? 0) + activity.minutes);
+        totalsById.set(activity.metaId, (totalsById.get(activity.metaId) ?? 0) + activity.minutes);
       }
     }
 
-    return [...totals.entries()]
+    return [...totalsById.entries()]
       .map(([id, minutes]) => ({
         id,
-        name: workoutNames.get(id) ?? "Unknown workout",
+        name: namesById.get(id) ?? "Unknown item",
         minutes
       }))
       .sort((left, right) => right.minutes - left.minutes || left.name.localeCompare(right.name));
-  }, [entries, workouts]);
+  }, [entries, entertainment]);
 
-  const totalMinutes = useMemo(
-    () => workoutTotals.reduce((sum, workout) => sum + workout.minutes, 0),
-    [workoutTotals]
-  );
+  const totalMinutes = useMemo(() => totals.reduce((sum, item) => sum + item.minutes, 0), [totals]);
 
   const slices = useMemo<SlicePoint[]>(() => {
     if (totalMinutes <= 0) {
@@ -227,14 +224,14 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
     }
 
     let currentAngle = -90;
-    return workoutTotals.map((workout, index) => {
-      const ratio = workout.minutes / totalMinutes;
+    return totals.map((item, index) => {
+      const ratio = item.minutes / totalMinutes;
       const sweep = ratio * 360;
       const startAngle = currentAngle;
       currentAngle += sweep;
       const endAngle = currentAngle;
       return {
-        workout,
+        item,
         startAngle,
         endAngle,
         percentage: ratio * 100,
@@ -242,15 +239,15 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
         color: sliceColors[index % sliceColors.length]
       };
     });
-  }, [workoutTotals, totalMinutes, sliceColors]);
+  }, [totals, totalMinutes, sliceColors]);
 
-  if (workouts.length === 0) {
+  if (entertainment.length === 0) {
     return (
       <div className="mb-0">
         <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
-          <h2 className="h5 mb-0">Workouts Chart</h2>
+          <h2 className="h5 mb-0">Entertainment Chart</h2>
         </div>
-        <p className="text-secondary mb-2">Add workout options in Metadata to render this chart.</p>
+        <p className="text-secondary mb-2">Add entertainment options in Metadata to render this chart.</p>
         <Link className="btn btn-primary btn-sm" to="/settings/meta">
           Open Metadata
         </Link>
@@ -262,7 +259,7 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
     return (
       <div className="mb-0">
         <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
-          <h2 className="h5 mb-0">Workouts Chart</h2>
+          <h2 className="h5 mb-0">Entertainment Chart</h2>
           <button
             className="btn btn-sm btn-outline-secondary"
             type="button"
@@ -271,7 +268,7 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
             {chartStyle === "donut" ? "Make it a Pie" : "Make it a Donut"}
           </button>
         </div>
-        <p className="text-secondary mb-0">No workout activity entries yet.</p>
+        <p className="text-secondary mb-0">No entertainment entries yet.</p>
       </div>
     );
   }
@@ -283,16 +280,16 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
   };
 
   const handleSliceHoverStart = (slice: SlicePoint) => {
-    setHoveredWorkoutId(slice.workout.id);
+    setHoveredItemId(slice.item.id);
     setTooltipAnchor(getTooltipPointForSlice(slice));
   };
 
   const handleSliceHoverEnd = () => {
-    setHoveredWorkoutId(null);
+    setHoveredItemId(null);
     setTooltipAnchor(null);
   };
 
-  const activeSlice = hoveredWorkoutId ? slices.find((slice) => slice.workout.id === hoveredWorkoutId) ?? null : null;
+  const activeSlice = hoveredItemId ? slices.find((slice) => slice.item.id === hoveredItemId) ?? null : null;
 
   const tooltip = activeSlice && tooltipAnchor
     ? {
@@ -304,7 +301,7 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
   return (
     <div className="workouts-composition-wrap">
       <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
-        <h2 className="h5 mb-0">Workouts Chart</h2>
+        <h2 className="h5 mb-0">Entertainment Chart</h2>
         <button
           className="btn btn-sm btn-outline-secondary"
           type="button"
@@ -319,13 +316,13 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label="Workout composition chart"
+        aria-label="Entertainment composition chart"
       >
         {slices.map((slice) => {
           const sweep = slice.endAngle - slice.startAngle;
           const singleSlice = slices.length === 1 && sweep >= 360 - FULL_CIRCLE_EPSILON;
-          const isActive = hoveredWorkoutId === slice.workout.id;
-          const isMuted = hoveredWorkoutId !== null && !isActive;
+          const isActive = hoveredItemId === slice.item.id;
+          const isMuted = hoveredItemId !== null && !isActive;
           const fillOpacity = isMuted ? 0.36 : 0.96;
           const stroke = isActive ? "rgba(255,255,255,0.88)" : "rgba(0,0,0,0.22)";
           const strokeWidth = isActive ? 3 : 1;
@@ -333,7 +330,7 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
           if (chartStyle === "pie") {
             return singleSlice ? (
               <circle
-                key={slice.workout.id}
+                key={slice.item.id}
                 cx={CENTER_X}
                 cy={CENTER_Y}
                 r={OUTER_RADIUS}
@@ -346,7 +343,7 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
               />
             ) : (
               <path
-                key={slice.workout.id}
+                key={slice.item.id}
                 d={makePiePath(CENTER_X, CENTER_Y, OUTER_RADIUS, slice.startAngle, slice.endAngle)}
                 fill={slice.color}
                 fillOpacity={fillOpacity}
@@ -360,7 +357,7 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
 
           return singleSlice ? (
             <circle
-              key={slice.workout.id}
+              key={slice.item.id}
               cx={CENTER_X}
               cy={CENTER_Y}
               r={(OUTER_RADIUS + innerRadius) / 2}
@@ -373,7 +370,7 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
             />
           ) : (
             <path
-              key={slice.workout.id}
+              key={slice.item.id}
               d={makeDonutPath(CENTER_X, CENTER_Y, OUTER_RADIUS, innerRadius, slice.startAngle, slice.endAngle)}
               fill={slice.color}
               fillOpacity={fillOpacity}
@@ -399,10 +396,10 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
               stroke="rgba(255,255,255,0.2)"
             />
             <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="#ffffff">
-              {activeSlice.workout.name}
+              {activeSlice.item.name}
             </text>
             <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="#fff2bf">
-              {`Time: ${formatDuration(activeSlice.workout.minutes)}`}
+              {`Time: ${formatDuration(activeSlice.item.minutes)}`}
             </text>
             <text x={tooltip.x + 10} y={tooltip.y + 56} fontSize="12" fill="#d8f5ff">
               {`Share: ${formatNumber(activeSlice.percentage)}%`}
@@ -413,17 +410,17 @@ export function WorkoutsCompositionChart({ entries, workouts, theme }: WorkoutsC
 
       <div className="workouts-chart-legend mt-3">
         {slices.map((slice) => {
-          const isActive = hoveredWorkoutId === slice.workout.id;
+          const isActive = hoveredItemId === slice.item.id;
           return (
             <button
-              key={`legend-${slice.workout.id}`}
+              key={`legend-${slice.item.id}`}
               className={`btn btn-sm btn-secondary workout-legend-btn${isActive ? " workout-legend-btn-active" : ""}`}
               type="button"
               onMouseEnter={() => handleSliceHoverStart(slice)}
               onMouseLeave={handleSliceHoverEnd}
             >
               <span className="workout-legend-swatch" style={{ backgroundColor: slice.color }} />
-              <span className="small fw-semibold">{slice.workout.name}</span>
+              <span className="small fw-semibold">{slice.item.name}</span>
             </button>
           );
         })}

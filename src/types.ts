@@ -9,12 +9,13 @@ export const trackerKeys = [
   "mood",
   "homework",
   "cleaning",
-  "substances"
+  "substances",
+  "entertainment"
 ] as const;
 
 export type TrackerKey = (typeof trackerKeys)[number];
 export type ThemeMode = "light" | "dark";
-export type MetaListKey = "workouts" | "subjects" | "children" | "chores" | "substances";
+export type MetaListKey = "workouts" | "subjects" | "children" | "chores" | "substances" | "entertainment";
 
 export interface BaseTrackerEntry {
   id: string;
@@ -79,6 +80,15 @@ export interface SubstanceEntry extends BaseTrackerEntry {
   notes: string;
 }
 
+export interface EntertainmentActivity {
+  metaId: string;
+  minutes: number;
+}
+
+export interface EntertainmentEntry extends BaseTrackerEntry {
+  activities: EntertainmentActivity[];
+}
+
 export interface MetaItem {
   id: string;
   name: string;
@@ -90,6 +100,7 @@ export interface MetaLists {
   children: MetaItem[];
   chores: MetaItem[];
   substances: MetaItem[];
+  entertainment: MetaItem[];
 }
 
 export interface TrackerEntryByKey {
@@ -104,6 +115,7 @@ export interface TrackerEntryByKey {
   homework: HomeworkEntry;
   cleaning: ChoreEntry;
   substances: SubstanceEntry;
+  entertainment: EntertainmentEntry;
 }
 
 export type TrackerEntry = TrackerEntryByKey[TrackerKey];
@@ -140,7 +152,8 @@ export const trackerLabels: Record<TrackerKey, string> = {
   mood: "Mood",
   homework: "Homework",
   cleaning: "Chores",
-  substances: "Substances"
+  substances: "Substances",
+  entertainment: "Entertainment"
 };
 
 export const metaLabels: Record<MetaListKey, string> = {
@@ -148,5 +161,6 @@ export const metaLabels: Record<MetaListKey, string> = {
   subjects: "Subjects",
   children: "Students",
   chores: "Chores",
-  substances: "Substances"
+  substances: "Substances",
+  entertainment: "Entertainment"
 };
