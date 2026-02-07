@@ -3,6 +3,7 @@ dist
 dist-electron
 *.log
 release/
+release-alt/
 win-unpacked/
 *.blockmap
 latest.yml

@@ -12,8 +12,8 @@
     "build:electron": "tsc -p tsconfig.electron.json",
     "start": "node scripts/run-electron.cjs .",
     "preview": "vite preview",
-    "dist:win": "npm run build && electron-builder --win nsis",
-    "dist:win:portable": "npm run build && electron-builder --win portable"
+    "dist:win": "npm run build && electron-builder --win nsis --config.directories.output=release-alt",
+    "dist:win:portable": "npm run build && electron-builder --win portable --config.directories.output=release-alt"
   },
   "build": {
     "appId": "com.taskdiettracker.app",
