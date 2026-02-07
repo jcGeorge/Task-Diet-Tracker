@@ -297,7 +297,7 @@ export function InputPage() {
       <div className="col-12 col-lg-7 col-xl-6">
         <div className="card border-0 shadow-sm">
           <form className="card-body" onSubmit={handleFormSubmit} onKeyDown={handleFormKeyDown}>
-            <h1 className="h4 mb-2">{trackerLabels[trackerKey]} Input</h1>
+            <h1 className="h4 mb-2">{trackerLabels[trackerKey]} Entry</h1>
             <p className="text-secondary mb-3">Inputs are managed separately from tracker views.</p>
 
             <SharedDateInput id="entry-date" label="Date" value={date} onChange={setDate} required />
@@ -310,7 +310,7 @@ export function InputPage() {
                 <input
                   id="weight-lbs"
                   type="number"
-                  className="form-control"
+                  className="form-control shared-date-input"
                   min={0}
                   max={3000}
                   step="any"
@@ -328,7 +328,7 @@ export function InputPage() {
                 <input
                   id="fasting-hours"
                   type="number"
-                  className="form-control"
+                  className="form-control shared-date-input"
                   min={0}
                   max={24}
                   step="any"
@@ -346,7 +346,7 @@ export function InputPage() {
                 <input
                   id="steps-value"
                   type="number"
-                  className="form-control"
+                  className="form-control shared-date-input"
                   min={0}
                   max={200000}
                   step="any"
@@ -359,12 +359,12 @@ export function InputPage() {
             {trackerKey === "carbs" ? (
               <div className="mb-3">
                 <label htmlFor="carbs-value" className="form-label fw-semibold">
-                  Carbs (g)
+                  Carbs (grams)
                 </label>
                 <input
                   id="carbs-value"
                   type="number"
-                  className="form-control"
+                  className="form-control shared-date-input"
                   min={0}
                   max={500}
                   step="any"
@@ -390,7 +390,7 @@ export function InputPage() {
                           <div key={item.id} className="d-flex gap-2 align-items-center">
                             <button
                               type="button"
-                              className={`btn btn-sm ${isSelected ? "btn-success" : "flag-toggle"}`}
+                              className={`btn ${isSelected ? "btn-success" : "flag-toggle"}`}
                               onClick={() => toggleWorkout(item.id)}
                             >
                               {item.name}
@@ -398,8 +398,7 @@ export function InputPage() {
                             {isSelected ? (
                               <input
                                 type="number"
-                                className="form-control form-control-sm"
-                                style={{ maxWidth: "140px" }}
+                                className="form-control form-control-sm shared-date-input"
                                 min={0}
                                 max={1440}
                                 step="any"
@@ -433,7 +432,7 @@ export function InputPage() {
                       </label>
                       <select
                         id="homework-child"
-                        className="form-select"
+                        className="form-select shared-date-input"
                         value={homeworkChildId}
                         onChange={(event) => setHomeworkChildId(event.target.value)}
                       >
@@ -452,7 +451,7 @@ export function InputPage() {
                       <input
                         id="homework-minutes"
                         type="number"
-                        className="form-control"
+                        className="form-control shared-date-input"
                         min={0}
                         max={1440}
                         step="any"
@@ -494,7 +493,7 @@ export function InputPage() {
                             <button
                               key={item.id}
                               type="button"
-                              className={`btn btn-sm ${enabled ? "btn-success" : "flag-toggle"}`}
+                              className={`btn ${enabled ? "btn-success" : "flag-toggle"}`}
                               onClick={() => toggleIdValue(item.id, selectedChoreIds, setSelectedChoreIds)}
                             >
                               {item.name}
@@ -537,7 +536,7 @@ export function InputPage() {
                             <button
                               key={item.id}
                               type="button"
-                              className={`btn btn-sm ${enabled ? "btn-success" : "flag-toggle"}`}
+                              className={`btn ${enabled ? "btn-danger" : "flag-toggle"}`}
                               onClick={() => toggleIdValue(item.id, selectedSubstanceIds, setSelectedSubstanceIds)}
                             >
                               {item.name}
@@ -563,13 +562,16 @@ export function InputPage() {
               </>
             ) : null}
 
-            <button className="btn btn-primary w-100 mb-2" type="submit">
-              Save Input
-            </button>
+            <hr className="entry-form-divider" />
 
-            <Link className="btn btn-outline-secondary w-100" to={`/tracker/${trackerKey}`}>
-              View {trackerLabels[trackerKey]} Tracker
-            </Link>
+            <div className="d-flex align-items-center justify-content-between mt-2 input-action-row">
+              <Link className="btn btn-outline-secondary input-action-btn" to={`/tracker/${trackerKey}`}>
+                View Tracker
+              </Link>
+              <button className="btn btn-primary input-action-btn" type="submit">
+                Create Entry
+              </button>
+            </div>
           </form>
         </div>
       </div>

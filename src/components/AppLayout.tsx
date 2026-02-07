@@ -28,16 +28,22 @@ export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data, loading, error, clearError, updateSettings } = useAppData();
+  const pathname = location.pathname;
   const activeTracker = getTrackerFromPath(location.pathname);
   const activeInput = getInputFromPath(location.pathname);
   const isLightTheme = data.settings.theme === "light";
+  const isHomeRoute = pathname === "/";
+  const isTrackerRoute = pathname.startsWith("/tracker/");
+  const isInputRoute = pathname.startsWith("/input/");
+  const isSettingsRoute = pathname === "/settings";
+  const isMetadataRoute = pathname === "/settings/meta";
 
   return (
     <div className="app-shell">
       <header className="app-header sticky-top">
         <nav className="navbar navbar-expand-lg">
           <div className="container-fluid app-toolbar">
-            <Link to="/" className="navbar-brand fw-bold brand-link">
+            <Link to="/" className={`navbar-brand fw-bold brand-link ${isHomeRoute ? "brand-link-active" : ""}`}>
               Home
             </Link>
 
@@ -47,7 +53,7 @@ export function AppLayout() {
               </label>
               <select
                 id="tracker-nav"
-                className="form-select tracker-select"
+                className={`form-select tracker-select ${isTrackerRoute ? "tracker-select-active" : ""}`}
                 value={isTrackerKey(activeTracker) ? activeTracker : ""}
                 onChange={(event) => {
                   if (event.target.value) {
@@ -68,7 +74,7 @@ export function AppLayout() {
               </label>
               <select
                 id="input-nav"
-                className="form-select tracker-select"
+                className={`form-select tracker-select ${isInputRoute ? "tracker-select-active" : ""}`}
                 value={isTrackerKey(activeInput) ? activeInput : ""}
                 onChange={(event) => {
                   if (event.target.value) {
@@ -87,16 +93,30 @@ export function AppLayout() {
               <button
                 className="btn btn-outline-secondary settings-btn"
                 type="button"
-                aria-label={`Switch to ${isLightTheme ? "dark" : "light"} mode`}
+                aria-label="Theme"
+                title="Theme"
                 onClick={() => updateSettings({ theme: isLightTheme ? "dark" : "light" })}
               >
                 <i className={`bi ${isLightTheme ? "bi-sun-fill" : "bi-moon-fill"}`} aria-hidden="true" />
               </button>
 
               <button
-                className="btn btn-outline-secondary settings-btn"
+                className={`btn btn-outline-secondary settings-btn ${isMetadataRoute ? "toolbar-btn-active" : ""}`}
                 type="button"
-                aria-label="Open settings"
+                aria-label="Metadata"
+                title="Metadata"
+                aria-current={isMetadataRoute ? "page" : undefined}
+                onClick={() => navigate("/settings/meta")}
+              >
+                <i className="bi bi-database-fill" aria-hidden="true" />
+              </button>
+
+              <button
+                className={`btn btn-outline-secondary settings-btn ${isSettingsRoute ? "toolbar-btn-active" : ""}`}
+                type="button"
+                aria-label="Settings"
+                title="Settings"
+                aria-current={isSettingsRoute ? "page" : undefined}
                 onClick={() => navigate("/settings")}
               >
                 <i className="bi bi-gear-fill" aria-hidden="true" />

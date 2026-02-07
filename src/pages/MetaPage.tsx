@@ -136,7 +136,7 @@ export function MetaPage() {
                 </label>
                 <input
                   id="meta-starting-weight"
-                  className="form-control"
+                  className="form-control shared-date-input"
                   type="number"
                   inputMode="decimal"
                   min="0"
@@ -169,7 +169,7 @@ export function MetaPage() {
                 </label>
                 <input
                   id="meta-weight-loss-per-week"
-                  className="form-control"
+                  className="form-control shared-date-input"
                   type="number"
                   inputMode="decimal"
                   min="0"
@@ -189,7 +189,7 @@ export function MetaPage() {
                 </label>
                 <input
                   id="meta-weight-goal"
-                  className="form-control"
+                  className="form-control shared-date-input"
                   type="number"
                   inputMode="decimal"
                   min="0"
@@ -267,9 +267,13 @@ export function MetaPage() {
                             >
                               Delete
                             </button>
-                            <span className={`badge ${usageCount > 0 ? "text-bg-warning" : "text-bg-secondary"}`}>
+                            <button
+                              type="button"
+                              className={`btn btn-sm meta-usage-btn ${usageCount > 0 ? "btn-warning" : "btn-secondary"}`}
+                              disabled
+                            >
                               Used: {usageCount}
-                            </span>
+                            </button>
                           </div>
                         );
                       })}

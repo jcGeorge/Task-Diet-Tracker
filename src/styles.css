@@ -64,6 +64,12 @@ body {
   padding-right: 7px;
 }
 
+.brand-link-active {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.24rem;
+}
+
 .toolbar-controls {
   margin-left: auto;
   display: flex;
@@ -76,8 +82,34 @@ body {
   min-width: 154px;
 }
 
+.form-select.tracker-select-active,
+.form-select.tracker-select-active:focus {
+  border-color: color-mix(in srgb, var(--bs-primary) 72%, #ffffff);
+  box-shadow: 0 0 0 0.14rem rgba(var(--bs-primary-rgb), 0.2);
+}
+
+html[data-bs-theme="light"] .form-select.tracker-select-active,
+html[data-bs-theme="light"] .form-select.tracker-select-active:focus {
+  background-color: #edf2f6;
+  border-color: #778797;
+  box-shadow: 0 0 0 0.18rem rgba(86, 104, 118, 0.3);
+}
+
+html[data-bs-theme="dark"] .form-select.tracker-select-active,
+html[data-bs-theme="dark"] .form-select.tracker-select-active:focus {
+  background-color: #2f3943;
+  border-color: #9fb6c8;
+  box-shadow: 0 0 0 0.2rem rgba(140, 163, 180, 0.34);
+}
+
 .settings-btn {
   min-width: 2.6rem;
+}
+
+.toolbar-btn-active {
+  color: var(--bs-btn-hover-color, #ffffff);
+  background-color: var(--bs-btn-hover-bg, #6c757d);
+  border-color: var(--bs-btn-hover-border-color, #6c757d);
 }
 
 .delete-data-controls {
@@ -157,8 +189,40 @@ body {
   align-items: center;
 }
 
+.meta-usage-btn {
+  min-width: 5.4rem;
+  text-align: left;
+}
+
+.input-action-row {
+  width: 100%;
+}
+
+.input-action-btn {
+  flex: 0 0 26.6%;
+  max-width: 224px;
+}
+
+.entry-form-divider {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--app-border) 76%, transparent);
+  margin: 1rem 0 0.8rem;
+  opacity: 1;
+}
+
+html[data-bs-theme="light"] .entry-form-divider {
+  border-top-color: color-mix(in srgb, #9aa8b5 58%, transparent);
+}
+
+html[data-bs-theme="dark"] .entry-form-divider {
+  border-top-color: color-mix(in srgb, #6a7886 72%, transparent);
+}
+
 .app-toast {
   --app-toast-base-height: 58px;
+  width: max-content;
+  max-width: min(400px, calc(100vw - 2rem));
+  min-width: 0;
   min-height: var(--app-toast-base-height);
   max-height: calc(var(--app-toast-base-height) + 50px);
 }
@@ -242,7 +306,7 @@ body {
 
 .graph-metric-label {
   display: block;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   opacity: 0.78;
 }
 
@@ -312,5 +376,10 @@ html[data-bs-theme="light"] .form-control[type="date"]::-webkit-calendar-picker-
 
   .shared-date-input {
     width: 100%;
+  }
+
+  .input-action-btn {
+    flex: 1 1 auto;
+    max-width: none;
   }
 }

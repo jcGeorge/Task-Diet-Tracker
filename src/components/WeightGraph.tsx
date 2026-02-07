@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { displayDateToIso } from "../lib/date";
 import type { AppSettings, WeightEntry } from "../types";
 
@@ -83,7 +84,14 @@ export function WeightGraph({ settings, entries }: WeightGraphProps) {
   const startDate = settings.dietStartDate ? parseDisplayDate(settings.dietStartDate) : null;
 
   if (startWeight === null || goalWeight === null || expectedLossPerWeek === null || !startDate) {
-    return <p className="mb-0 text-secondary">Set Diet Baseline values in Metadata to render the graph.</p>;
+    return (
+      <div className="d-flex flex-column align-items-start gap-2">
+        <p className="mb-0 text-secondary">Please fill out all Diet Baseline items for the weight graph to appear</p>
+        <Link className="btn btn-primary btn-sm" to="/settings/meta">
+          Open Metadata
+        </Link>
+      </div>
+    );
   }
 
   if (expectedLossPerWeek <= 0) {
