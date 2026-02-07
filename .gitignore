@@ -2,4 +2,7 @@ node_modules
 dist
 dist-electron
 *.log
-
+release/
+win-unpacked/
+*.blockmap
+latest.yml

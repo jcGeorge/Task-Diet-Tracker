@@ -11,7 +11,40 @@
     "build:renderer": "tsc --noEmit && vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "start": "node scripts/run-electron.cjs .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dist:win": "npm run build && electron-builder --win nsis",
+    "dist:win:portable": "npm run build && electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.taskdiettracker.app",
+    "productName": "Task & Diet Tracker",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "artifactName": "TaskDietTracker-${version}-${arch}.${ext}",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Task & Diet Tracker"
+    }
   },
   "dependencies": {
     "bootstrap": "^5.3.3",
@@ -28,6 +61,7 @@
     "concurrently": "^9.1.2",
     "cross-env": "^10.0.0",
     "electron": "^35.0.0",
+    "electron-builder": "^26.7.0",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",
     "wait-on": "^8.0.2"
