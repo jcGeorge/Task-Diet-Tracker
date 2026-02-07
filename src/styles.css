@@ -1,0 +1,316 @@
+html[data-bs-theme="light"] {
+  --bs-primary: #6f7d89;
+  --bs-primary-rgb: 111, 125, 137;
+  --bs-link-color: #4b5b66;
+  --bs-link-hover-color: #33414b;
+  --app-bg-1: #f3f1d5;
+  --app-bg-2: #ece9c3;
+  --app-bg-3: #e4dfb6;
+  --app-text: #2f3b43;
+  --app-header-bg: #dfe5ea;
+  --app-card-bg: #f4f6f8;
+  --app-input-bg: #e3e9ee;
+  --app-list-bg: #edf1f4;
+  --app-border: #b7c1c9;
+}
+
+html[data-bs-theme="dark"] {
+  --bs-primary: #8ca3b4;
+  --bs-primary-rgb: 140, 163, 180;
+  --bs-link-color: #b2cadc;
+  --bs-link-hover-color: #d0e4f2;
+  --app-bg-1: #161a1f;
+  --app-bg-2: #1f252d;
+  --app-bg-3: #2b343d;
+  --app-text: #e6ebf0;
+  --app-header-bg: #2a323a;
+  --app-card-bg: #252d35;
+  --app-input-bg: #313b45;
+  --app-list-bg: #2d3640;
+  --app-border: #46515d;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Trebuchet MS", "Franklin Gothic Medium", "Segoe UI", sans-serif;
+  color: var(--app-text);
+  background:
+    radial-gradient(circle at 15% 0%, var(--app-bg-2), transparent 42%),
+    linear-gradient(140deg, var(--app-bg-1), var(--app-bg-3));
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-header {
+  background-color: color-mix(in srgb, var(--app-header-bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--app-border);
+}
+
+.app-toolbar {
+  gap: 0.75rem;
+}
+
+.brand-link {
+  color: var(--bs-primary);
+  margin-left: 7px;
+  padding-right: 7px;
+}
+
+.toolbar-controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.tracker-select {
+  width: 154px;
+  min-width: 154px;
+}
+
+.settings-btn {
+  min-width: 2.6rem;
+}
+
+.delete-data-controls {
+  min-height: 38px;
+}
+
+.delete-date-input {
+  width: 16rem;
+  min-width: 0;
+}
+
+.shared-date-input {
+  width: 40%;
+  min-width: 180px;
+}
+
+.app-body {
+  padding: 1rem;
+  max-width: 1200px;
+}
+
+.card,
+.loading-card,
+.hero-card,
+.tracker-card {
+  background-color: color-mix(in srgb, var(--app-card-bg) 94%, transparent);
+  border: 1px solid var(--app-border) !important;
+}
+
+.form-control,
+.form-select {
+  background-color: var(--app-input-bg);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--app-input-bg);
+  border-color: color-mix(in srgb, var(--bs-primary) 72%, #ffffff);
+  color: var(--app-text);
+  box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.16);
+}
+
+.form-control::placeholder {
+  color: color-mix(in srgb, var(--app-text) 55%, transparent);
+}
+
+.list-group-item {
+  background-color: var(--app-list-bg);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+.text-secondary,
+.form-text {
+  color: color-mix(in srgb, var(--app-text) 68%, transparent) !important;
+}
+
+.flag-toggle {
+  border: 2px dotted #8b939a;
+  color: #6f757b;
+  background-color: transparent;
+}
+
+.flag-toggle:hover,
+.flag-toggle:focus {
+  border-color: #7f878d;
+  color: #5d646a;
+  background-color: color-mix(in srgb, var(--app-input-bg) 72%, transparent);
+}
+
+.meta-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto auto auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.app-toast {
+  --app-toast-base-height: 58px;
+  min-height: var(--app-toast-base-height);
+  max-height: calc(var(--app-toast-base-height) + 50px);
+}
+
+.app-toast .d-flex {
+  align-items: center;
+  min-height: var(--app-toast-base-height);
+}
+
+.app-toast .toast-body {
+  display: flex;
+  align-items: center;
+  min-height: var(--app-toast-base-height);
+  padding-top: 0;
+  padding-bottom: 0;
+  max-height: calc(var(--app-toast-base-height) + 34px);
+  overflow-y: auto;
+  white-space: normal;
+}
+
+.weight-graph-wrap {
+  width: 100%;
+}
+
+.weight-graph-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 0.6rem;
+  background-color: color-mix(in srgb, var(--app-card-bg) 90%, transparent);
+}
+
+.graph-legend {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.legend-item {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.legend-swatch {
+  width: 18px;
+  height: 4px;
+  border-radius: 999px;
+}
+
+.legend-expected {
+  background-color: #dc3545;
+}
+
+.legend-actual {
+  background-color: #198754;
+}
+
+.legend-mean {
+  width: 18px;
+  height: 0;
+  border-top: 3px dotted #2fbf71;
+  border-radius: 0;
+  background: transparent;
+}
+
+.graph-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.65rem;
+}
+
+.graph-metric {
+  border: 1px solid var(--app-border);
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  background-color: color-mix(in srgb, var(--app-card-bg) 88%, transparent);
+}
+
+.graph-metric-label {
+  display: block;
+  font-size: 0.78rem;
+  opacity: 0.78;
+}
+
+.graph-metric-value {
+  display: block;
+  font-size: 0.96rem;
+  font-weight: 600;
+}
+
+html[data-bs-theme="light"] .form-control[type="date"] {
+  background-color: var(--app-input-bg);
+  color: var(--app-text);
+  color-scheme: light;
+}
+
+html[data-bs-theme="light"] .form-control[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.85;
+}
+
+.graph-placeholder {
+  width: 100%;
+  min-height: 220px;
+  border-radius: 0.75rem;
+  margin: 0.5rem 0 1rem 0;
+  border: 2px dashed rgba(var(--bs-primary-rgb), 0.45);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(var(--bs-primary-rgb), 0.1) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(var(--bs-primary-rgb), 0.1) 50%,
+      rgba(var(--bs-primary-rgb), 0.1) 75%,
+      transparent 75%
+    ),
+    color-mix(in srgb, var(--app-card-bg) 88%, transparent);
+  background-size: 22px 22px;
+}
+
+@media (max-width: 767px) {
+  .app-body {
+    padding: 0.75rem;
+  }
+
+  .app-toolbar {
+    align-items: stretch;
+  }
+
+  .toolbar-controls {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .tracker-select {
+    width: auto;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .meta-row {
+    grid-template-columns: 1fr;
+  }
+
+  .delete-date-input {
+    width: 100%;
+  }
+
+  .shared-date-input {
+    width: 100%;
+  }
+}
