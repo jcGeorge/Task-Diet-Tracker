@@ -59,6 +59,8 @@ function buildBackupDataBeforeDate(source: AppData, beforeDate: string): AppData
 export function SettingsPage() {
   const {
     data,
+    chartDateRangePreferences,
+    updateChartDateRangePreferences,
     updateSettings,
     importFromJson,
     exportToJson,
@@ -73,6 +75,9 @@ export function SettingsPage() {
   const [deleteModalKind, setDeleteModalKind] = useState<DeleteModalKind>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [deleteBeforeDate, setDeleteBeforeDate] = useState(todayDisplayDate());
+  const todayIso = displayDateToIso(todayDisplayDate());
+  const baselineStartIso = data.settings.dietStartDate ? displayDateToIso(data.settings.dietStartDate) : "";
+  const userRangeStartDefaultIso = baselineStartIso || todayIso;
   const isDeletePending =
     busyAction === "delete-all" || busyAction === "delete-before" || busyAction === "backup-delete-before";
   const isImportPending = busyAction === "import";
@@ -196,7 +201,7 @@ export function SettingsPage() {
 
   return (
     <>
-      <section className="row g-3">
+      <section className="row g-3 justify-content-center">
         <div className="col-12 col-xl-8">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
@@ -226,6 +231,96 @@ export function SettingsPage() {
                   >
                     Dark
                   </button>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h2 className="h6 text-uppercase text-secondary">Chart Date Range</h2>
+                <div className="d-flex flex-column gap-3">
+                  <div className="row g-2 align-items-center">
+                    <div className="col-12 col-md-3">
+                      <label htmlFor="chart-range-start-mode" className="fw-semibold mb-0">
+                        Range Start
+                      </label>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <select
+                        id="chart-range-start-mode"
+                        className="form-select"
+                        value={chartDateRangePreferences.startMode}
+                        onChange={(event) =>
+                          updateChartDateRangePreferences({
+                            startMode: event.target.value === "user" ? "user" : "application",
+                            ...(event.target.value === "user" ? { startIso: userRangeStartDefaultIso } : {})
+                          })
+                        }
+                      >
+                        <option value="application">Application Decides</option>
+                        <option value="user">User Decides</option>
+                      </select>
+                    </div>
+                    {chartDateRangePreferences.startMode === "user" ? (
+                      <div className="col-12 col-md-5">
+                        <input
+                          id="chart-range-start-date"
+                          type="date"
+                          className="form-control"
+                          value={chartDateRangePreferences.startIso}
+                          onChange={(event) =>
+                            updateChartDateRangePreferences({
+                              startIso: event.target.value
+                            })
+                          }
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="row g-2 align-items-center">
+                    <div className="col-12 col-md-3">
+                      <label htmlFor="chart-range-end-mode" className="fw-semibold mb-0">
+                        Range End
+                      </label>
+                    </div>
+                    <div className="col-12 col-md-4">
+                      <select
+                        id="chart-range-end-mode"
+                        className="form-select"
+                        value={chartDateRangePreferences.endMode}
+                        onChange={(event) =>
+                          updateChartDateRangePreferences({
+                            endMode: event.target.value === "user" ? "user" : "application",
+                            ...(event.target.value === "user" ? { endIso: todayIso } : {})
+                          })
+                        }
+                      >
+                        <option value="application">Application Decides</option>
+                        <option value="user">User Decides</option>
+                      </select>
+                    </div>
+                    {chartDateRangePreferences.endMode === "user" ? (
+                      <div className="col-12 col-md-5">
+                        <input
+                          id="chart-range-end-date"
+                          type="date"
+                          className="form-control"
+                          value={chartDateRangePreferences.endIso}
+                          onChange={(event) =>
+                            updateChartDateRangePreferences({
+                              endIso: event.target.value
+                            })
+                          }
+                        />
+                      </div>
+                    ) : null}
+                    {chartDateRangePreferences.endMode === "user" ? (
+                      <div className="col-12">
+                        <p className="form-text mb-0">
+                          This date remains static and will not automatically update when tomorrow comes around.
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 

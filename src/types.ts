@@ -16,6 +16,14 @@ export const trackerKeys = [
 export type TrackerKey = (typeof trackerKeys)[number];
 export type ThemeMode = "light" | "dark";
 export type MetaListKey = "workouts" | "subjects" | "children" | "chores" | "substances" | "entertainment";
+export type ChartDateRangeMode = "application" | "user";
+
+export interface ChartDateRangePreferences {
+  startMode: ChartDateRangeMode;
+  startIso: string;
+  endMode: ChartDateRangeMode;
+  endIso: string;
+}
 
 export interface BaseTrackerEntry {
   id: string;

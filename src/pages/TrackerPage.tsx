@@ -135,7 +135,7 @@ function normalizeIsoRange(startIso: string, endIso: string): IsoRange {
 
 export function TrackerPage() {
   const { trackerKey } = useParams();
-  const { data, removeTrackerEntry } = useAppData();
+  const { data, removeTrackerEntry, chartDateRangePreferences } = useAppData();
   const [homeworkTrackerStudentFilter, setHomeworkTrackerStudentFilter] = useState<string>("");
 
   if (!trackerKey || !isTrackerKey(trackerKey)) {
@@ -231,21 +231,35 @@ export function TrackerPage() {
     return fallbackRange;
   }, [trackerKey, fallbackIso, data.settings, data.trackers]);
 
-  const [draftStartIso, setDraftStartIso] = useState(defaultChartRange.startIso);
-  const [draftEndIso, setDraftEndIso] = useState(defaultChartRange.endIso);
-  const [appliedStartIso, setAppliedStartIso] = useState(defaultChartRange.startIso);
-  const [appliedEndIso, setAppliedEndIso] = useState(defaultChartRange.endIso);
+  const configuredChartRange = useMemo<IsoRange>(() => {
+    const startIso =
+      chartDateRangePreferences.startMode === "user" ? chartDateRangePreferences.startIso : defaultChartRange.startIso;
+    const endIso = chartDateRangePreferences.endMode === "user" ? chartDateRangePreferences.endIso : defaultChartRange.endIso;
+    return normalizeIsoRange(startIso, endIso);
+  }, [
+    chartDateRangePreferences.startMode,
+    chartDateRangePreferences.startIso,
+    chartDateRangePreferences.endMode,
+    chartDateRangePreferences.endIso,
+    defaultChartRange.startIso,
+    defaultChartRange.endIso
+  ]);
+
+  const [draftStartIso, setDraftStartIso] = useState(configuredChartRange.startIso);
+  const [draftEndIso, setDraftEndIso] = useState(configuredChartRange.endIso);
+  const [appliedStartIso, setAppliedStartIso] = useState(configuredChartRange.startIso);
+  const [appliedEndIso, setAppliedEndIso] = useState(configuredChartRange.endIso);
 
   useEffect(() => {
-    setDraftStartIso(defaultChartRange.startIso);
-    setDraftEndIso(defaultChartRange.endIso);
-    setAppliedStartIso(defaultChartRange.startIso);
-    setAppliedEndIso(defaultChartRange.endIso);
-  }, [trackerKey, defaultChartRange.startIso, defaultChartRange.endIso]);
+    setDraftStartIso(configuredChartRange.startIso);
+    setDraftEndIso(configuredChartRange.endIso);
+    setAppliedStartIso(configuredChartRange.startIso);
+    setAppliedEndIso(configuredChartRange.endIso);
+  }, [trackerKey, configuredChartRange.startIso, configuredChartRange.endIso]);
 
   const applyGraphDateFilter = () => {
-    const nextStartIso = draftStartIso || defaultChartRange.startIso;
-    const nextEndIso = draftEndIso || defaultChartRange.endIso;
+    const nextStartIso = draftStartIso || configuredChartRange.startIso;
+    const nextEndIso = draftEndIso || configuredChartRange.endIso;
     const normalized = normalizeIsoRange(nextStartIso, nextEndIso);
     setDraftStartIso(normalized.startIso);
     setDraftEndIso(normalized.endIso);
@@ -330,7 +344,12 @@ export function TrackerPage() {
           <div className="card border-0 shadow-sm">
             <div className="card-body">
               <h2 className="h5 mb-3">Weight Graph</h2>
-              <WeightGraph settings={data.settings} entries={filteredChartTrackers.weight} />
+              <WeightGraph
+                settings={data.settings}
+                entries={filteredChartTrackers.weight}
+                rangeStartIso={appliedStartIso}
+                rangeEndIso={appliedEndIso}
+              />
               {renderGraphDateControls()}
             </div>
           </div>

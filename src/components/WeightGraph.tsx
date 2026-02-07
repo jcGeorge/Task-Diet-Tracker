@@ -6,6 +6,8 @@ import type { AppSettings, WeightEntry } from "../types";
 interface WeightGraphProps {
   settings: AppSettings;
   entries: WeightEntry[];
+  rangeStartIso?: string;
+  rangeEndIso?: string;
 }
 
 interface Point {
@@ -34,6 +36,17 @@ function parseDisplayDate(value: string): Date | null {
   return date;
 }
 
+function parseIsoDate(value: string | undefined): Date | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return parsed;
+}
+
 function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * MS_PER_DAY);
 }
@@ -53,6 +66,102 @@ function buildPath(points: Point[], xForDate: (date: Date) => number, yForWeight
   return points
     .map((point, index) => `${index === 0 ? "M" : "L"} ${xForDate(point.date).toFixed(2)} ${yForWeight(point.weight).toFixed(2)}`)
     .join(" ");
+}
+
+function interpolateWeight(left: Point, right: Point, targetMs: number): number {
+  const leftMs = left.date.getTime();
+  const rightMs = right.date.getTime();
+  if (rightMs === leftMs) {
+    return left.weight;
+  }
+  const ratio = (targetMs - leftMs) / (rightMs - leftMs);
+  return left.weight + (right.weight - left.weight) * ratio;
+}
+
+function clipSeriesToRange(points: Point[], rangeStartMs: number, rangeEndMs: number): Point[] {
+  if (points.length === 0) {
+    return [];
+  }
+
+  const clipped: Point[] = [];
+
+  const pushPoint = (dateMs: number, weight: number) => {
+    const date = new Date(dateMs);
+    const last = clipped[clipped.length - 1];
+    if (last && last.date.getTime() === dateMs && Math.abs(last.weight - weight) < 0.000001) {
+      return;
+    }
+    clipped.push({ date, weight });
+  };
+
+  if (points.length === 1) {
+    const onlyMs = points[0].date.getTime();
+    if (onlyMs >= rangeStartMs && onlyMs <= rangeEndMs) {
+      clipped.push(points[0]);
+    }
+    return clipped;
+  }
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const left = points[index];
+    const right = points[index + 1];
+    const leftMs = left.date.getTime();
+    const rightMs = right.date.getTime();
+
+    const segmentStartMs = Math.max(rangeStartMs, Math.min(leftMs, rightMs));
+    const segmentEndMs = Math.min(rangeEndMs, Math.max(leftMs, rightMs));
+    if (segmentStartMs > segmentEndMs) {
+      continue;
+    }
+
+    const startWeight =
+      segmentStartMs === leftMs ? left.weight :
+      segmentStartMs === rightMs ? right.weight :
+      interpolateWeight(left, right, segmentStartMs);
+    const endWeight =
+      segmentEndMs === leftMs ? left.weight :
+      segmentEndMs === rightMs ? right.weight :
+      interpolateWeight(left, right, segmentEndMs);
+
+    pushPoint(segmentStartMs, startWeight);
+    pushPoint(segmentEndMs, endWeight);
+  }
+
+  return clipped;
+}
+
+function computeRegressionLossPerWeek(points: Array<{ date: Date; weight: number }>): number | null {
+  if (points.length < 2) {
+    return null;
+  }
+
+  const originMs = points[0].date.getTime();
+  const samples = points.map((point) => ({
+    x: (point.date.getTime() - originMs) / MS_PER_WEEK,
+    y: point.weight
+  }));
+
+  const meanX = samples.reduce((sum, sample) => sum + sample.x, 0) / samples.length;
+  const meanY = samples.reduce((sum, sample) => sum + sample.y, 0) / samples.length;
+
+  let numerator = 0;
+  let denominator = 0;
+  for (const sample of samples) {
+    const dx = sample.x - meanX;
+    numerator += dx * (sample.y - meanY);
+    denominator += dx * dx;
+  }
+
+  if (!Number.isFinite(denominator) || denominator <= 0) {
+    return null;
+  }
+
+  const slopeLbsPerWeek = numerator / denominator;
+  if (!Number.isFinite(slopeLbsPerWeek)) {
+    return null;
+  }
+
+  return -slopeLbsPerWeek;
 }
 
 function formatAxisDate(date: Date, includeYear: boolean): string {
@@ -75,7 +184,7 @@ function formatWeight(value: number): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
-export function WeightGraph({ settings, entries }: WeightGraphProps) {
+export function WeightGraph({ settings, entries, rangeStartIso, rangeEndIso }: WeightGraphProps) {
   const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; date: Date; weight: number } | null>(null);
 
   const startWeight = settings.startingWeightLbs;
@@ -130,19 +239,28 @@ export function WeightGraph({ settings, entries }: WeightGraphProps) {
   let actualGoalDate: Date | null = null;
   let projectedEndByActual = expectedEndDate;
   if (latestEntry) {
-    const elapsedMs = latestEntry.date.getTime() - startDate.getTime();
-    if (elapsedMs > 0) {
-      const elapsedWeeks = elapsedMs / MS_PER_WEEK;
-      actualMeanLossPerWeek = (startWeight - latestEntry.weight) / elapsedWeeks;
-      if (actualMeanLossPerWeek > 0) {
-        const projectedWeeks = poundsToLose / actualMeanLossPerWeek;
-        actualGoalDate = addDays(startDate, projectedWeeks * 7);
-        projectedEndByActual = addDays(actualGoalDate, 14);
-      }
+    actualMeanLossPerWeek = computeRegressionLossPerWeek(filteredEntries);
+    if (actualMeanLossPerWeek !== null && actualMeanLossPerWeek > 0) {
+      const remainingPoundsToLose = latestEntry.weight - goalWeight;
+      const remainingWeeks = Math.max(0, remainingPoundsToLose / actualMeanLossPerWeek);
+      actualGoalDate = addDays(latestEntry.date, remainingWeeks * 7);
+      projectedEndByActual = addDays(actualGoalDate, 14);
     }
   }
 
   const endDate = maxDate([expectedEndDate, latestPlusTwo, projectedEndByActual]);
+  const requestedRangeStartDate = parseIsoDate(rangeStartIso);
+  const requestedRangeEndDate = parseIsoDate(rangeEndIso);
+  const chartStartDate =
+    requestedRangeStartDate && requestedRangeEndDate
+      ? new Date(Math.min(requestedRangeStartDate.getTime(), requestedRangeEndDate.getTime()))
+      : startDate;
+  const chartEndDate =
+    requestedRangeStartDate && requestedRangeEndDate
+      ? new Date(Math.max(requestedRangeStartDate.getTime(), requestedRangeEndDate.getTime()))
+      : endDate;
+  const normalizedChartEndDate =
+    chartEndDate.getTime() > chartStartDate.getTime() ? chartEndDate : addDays(chartStartDate, 1);
 
   let yMax = Math.round((startWeight + 10) / 10) * 10;
   let yMin = Math.round((goalWeight - 10) / 10) * 10;
@@ -156,10 +274,10 @@ export function WeightGraph({ settings, entries }: WeightGraphProps) {
 
   const plotWidth = CHART_WIDTH - PADDING.left - PADDING.right;
   const plotHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom;
-  const xSpan = Math.max(endDate.getTime() - startDate.getTime(), MS_PER_DAY);
+  const xSpan = Math.max(normalizedChartEndDate.getTime() - chartStartDate.getTime(), MS_PER_DAY);
   const ySpan = Math.max(yMax - yMin, 10);
 
-  const xForDate = (date: Date): number => PADDING.left + ((date.getTime() - startDate.getTime()) / xSpan) * plotWidth;
+  const xForDate = (date: Date): number => PADDING.left + ((date.getTime() - chartStartDate.getTime()) / xSpan) * plotWidth;
   const yForWeight = (weight: number): number => PADDING.top + ((yMax - weight) / ySpan) * plotHeight;
 
   const projectedSeries: Point[] = [
@@ -172,8 +290,12 @@ export function WeightGraph({ settings, entries }: WeightGraphProps) {
 
   const actualSeries: Point[] = [{ date: startDate, weight: startWeight }, ...filteredEntries.map((entry) => ({ date: entry.date, weight: entry.weight }))];
 
-  const projectedPath = buildPath(projectedSeries, xForDate, yForWeight);
-  const actualPath = buildPath(actualSeries, xForDate, yForWeight);
+  const rangeStartMs = chartStartDate.getTime();
+  const rangeEndMs = normalizedChartEndDate.getTime();
+  const projectedVisibleSeries = clipSeriesToRange(projectedSeries, rangeStartMs, rangeEndMs);
+  const projectedPath = buildPath(projectedVisibleSeries, xForDate, yForWeight);
+  const actualVisibleSeries = clipSeriesToRange(actualSeries, rangeStartMs, rangeEndMs);
+  const actualPath = buildPath(actualVisibleSeries, xForDate, yForWeight);
   const latestActualPoint = actualSeries.length > 0 ? actualSeries[actualSeries.length - 1] : null;
   const actualMeanSeries: Point[] =
     actualGoalDate && actualMeanLossPerWeek && actualMeanLossPerWeek > 0 && latestActualPoint && filteredEntries.length > 0
@@ -183,12 +305,17 @@ export function WeightGraph({ settings, entries }: WeightGraphProps) {
           ...(endDate.getTime() > actualGoalDate.getTime() ? [{ date: endDate, weight: goalWeight }] : [])
         ]
       : [];
-  const actualMeanPath = buildPath(actualMeanSeries, xForDate, yForWeight);
+  const actualMeanVisibleSeries = clipSeriesToRange(actualMeanSeries, rangeStartMs, rangeEndMs);
+  const actualMeanPath = buildPath(actualMeanVisibleSeries, xForDate, yForWeight);
+  const actualNodes = actualSeries.filter((point) => {
+    const ms = point.date.getTime();
+    return ms >= rangeStartMs && ms <= rangeEndMs;
+  });
 
   const xTickCount = 6;
   const xTicks = Array.from({ length: xTickCount + 1 }, (_, index) => {
     const ratio = index / xTickCount;
-    return new Date(startDate.getTime() + ratio * xSpan);
+    return new Date(chartStartDate.getTime() + ratio * xSpan);
   });
 
   const yTicks: number[] = [];
@@ -270,7 +397,7 @@ export function WeightGraph({ settings, entries }: WeightGraphProps) {
         {actualMeanPath ? <path d={actualMeanPath} fill="none" stroke="#2fbf71" strokeWidth="2.4" strokeDasharray="6 5" /> : null}
         {actualPath ? <path d={actualPath} fill="none" stroke="#198754" strokeWidth="3" /> : null}
 
-        {actualSeries.map((point, index) => {
+        {actualNodes.map((point, index) => {
           const x = xForDate(point.date);
           const y = yForWeight(point.weight);
           return (

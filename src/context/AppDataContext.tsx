@@ -13,6 +13,7 @@ import { getMetaItemUsageCount } from "../lib/metaUsage";
 import type {
   AppData,
   AppSettings,
+  ChartDateRangePreferences,
   MetaListKey,
   NewTrackerEntryByKey,
   TrackerEntryByKey,
@@ -22,6 +23,7 @@ import { trackerKeys } from "../types";
 
 interface AppDataContextValue {
   data: AppData;
+  chartDateRangePreferences: ChartDateRangePreferences;
   loading: boolean;
   error: string | null;
   addTrackerEntry: <K extends TrackerKey>(trackerKey: K, entry: NewTrackerEntryByKey[K]) => void;
@@ -32,6 +34,7 @@ interface AppDataContextValue {
   addMetaItem: (listKey: MetaListKey, name: string) => boolean;
   renameMetaItem: (listKey: MetaListKey, itemId: string, name: string) => boolean;
   removeMetaItem: (listKey: MetaListKey, itemId: string) => { ok: boolean; reason?: string };
+  updateChartDateRangePreferences: (next: Partial<ChartDateRangePreferences>) => void;
   importFromJson: () => Promise<boolean>;
   exportToJson: () => Promise<boolean>;
   exportProvidedData: (exportData: AppData) => Promise<boolean>;
@@ -39,6 +42,8 @@ interface AppDataContextValue {
 }
 
 const AppDataContext = createContext<AppDataContextValue | undefined>(undefined);
+const CHART_DATE_RANGE_STORAGE_KEY = "task-diet-tracker.chart-date-range";
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function nextId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -51,8 +56,66 @@ function stamp(data: AppData): AppData {
   return { ...data, updatedAt: new Date().toISOString() };
 }
 
+function todayIsoDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function normalizeIsoDate(value: unknown, fallback: string): string {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  return ISO_DATE_REGEX.test(value) ? value : fallback;
+}
+
+function normalizeChartMode(value: unknown): "application" | "user" {
+  return value === "user" ? "user" : "application";
+}
+
+function defaultChartDateRangePreferences(): ChartDateRangePreferences {
+  const todayIso = todayIsoDate();
+  return {
+    startMode: "application",
+    startIso: todayIso,
+    endMode: "application",
+    endIso: todayIso
+  };
+}
+
+function sanitizeChartDateRangePreferences(
+  value: unknown,
+  fallback: ChartDateRangePreferences
+): ChartDateRangePreferences {
+  if (!value || typeof value !== "object") {
+    return fallback;
+  }
+
+  const raw = value as Partial<ChartDateRangePreferences>;
+  return {
+    startMode: normalizeChartMode(raw.startMode),
+    startIso: normalizeIsoDate(raw.startIso, fallback.startIso),
+    endMode: normalizeChartMode(raw.endMode),
+    endIso: normalizeIsoDate(raw.endIso, fallback.endIso)
+  };
+}
+
+function readChartDateRangePreferences(): ChartDateRangePreferences {
+  const fallback = defaultChartDateRangePreferences();
+  try {
+    const raw = window.localStorage.getItem(CHART_DATE_RANGE_STORAGE_KEY);
+    if (!raw) {
+      return fallback;
+    }
+    return sanitizeChartDateRangePreferences(JSON.parse(raw), fallback);
+  } catch {
+    return fallback;
+  }
+}
+
 export function AppDataProvider({ children }: PropsWithChildren) {
   const [data, setData] = useState<AppData>(createDefaultData());
+  const [chartDateRangePreferences, setChartDateRangePreferences] = useState<ChartDateRangePreferences>(() =>
+    readChartDateRangePreferences()
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,6 +165,14 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       window.clearTimeout(timer);
     };
   }, [data, loading]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CHART_DATE_RANGE_STORAGE_KEY, JSON.stringify(chartDateRangePreferences));
+    } catch {
+      // Ignore localStorage write failures.
+    }
+  }, [chartDateRangePreferences]);
 
   const addTrackerEntry = useCallback(<K extends TrackerKey>(trackerKey: K, entry: NewTrackerEntryByKey[K]) => {
     if (!isDisplayDate(entry.date)) {
@@ -359,6 +430,18 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
+  const updateChartDateRangePreferences = useCallback((next: Partial<ChartDateRangePreferences>) => {
+    setChartDateRangePreferences((previous) =>
+      sanitizeChartDateRangePreferences(
+        {
+          ...previous,
+          ...next
+        },
+        previous
+      )
+    );
+  }, []);
+
   const exportToJson = useCallback(async (): Promise<boolean> => {
     try {
       return await window.taskTrackerApi.exportData(data);
@@ -384,6 +467,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
   const value = useMemo<AppDataContextValue>(
     () => ({
       data,
+      chartDateRangePreferences,
       loading,
       error,
       addTrackerEntry,
@@ -394,6 +478,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       addMetaItem,
       renameMetaItem,
       removeMetaItem,
+      updateChartDateRangePreferences,
       importFromJson,
       exportToJson,
       exportProvidedData,
@@ -401,6 +486,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     }),
     [
       data,
+      chartDateRangePreferences,
       loading,
       error,
       addTrackerEntry,
@@ -411,6 +497,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       addMetaItem,
       renameMetaItem,
       removeMetaItem,
+      updateChartDateRangePreferences,
       importFromJson,
       exportToJson,
       exportProvidedData,
