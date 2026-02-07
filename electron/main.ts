@@ -2,9 +2,20 @@ import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 
-type TrackerKey = "weight" | "fasting" | "carbs" | "workouts" | "steps" | "sleep" | "homework" | "cleaning" | "substances";
+type TrackerKey =
+  | "weight"
+  | "fasting"
+  | "carbs"
+  | "calories"
+  | "workouts"
+  | "steps"
+  | "sleep"
+  | "mood"
+  | "homework"
+  | "cleaning"
+  | "substances";
 type ThemeMode = "light" | "dark";
-type MetaListKey = "workouts" | "children" | "chores" | "substances";
+type MetaListKey = "workouts" | "subjects" | "children" | "chores" | "substances";
 
 interface BaseTrackerEntry {
   id: string;
@@ -23,6 +34,11 @@ interface CarbsEntry extends BaseTrackerEntry {
   carbs: number;
 }
 
+interface CaloriesEntry extends BaseTrackerEntry {
+  calories: number;
+  notes: string;
+}
+
 interface WorkoutEntry extends BaseTrackerEntry {
   activities: Array<{ metaId: string; minutes: number }>;
 }
@@ -31,9 +47,19 @@ interface StepsEntry extends BaseTrackerEntry {
   steps: number;
 }
 
-interface SleepEntry extends BaseTrackerEntry {}
+interface SleepEntry extends BaseTrackerEntry {
+  sleepTime: string;
+  wakeTime: string;
+}
+
+interface MoodEntry extends BaseTrackerEntry {
+  moodStart: number;
+  moodEnd: number;
+  notes: string;
+}
 
 interface HomeworkEntry extends BaseTrackerEntry {
+  subjectId: string;
   childId: string;
   minutes: number;
   notes: string;
@@ -60,6 +86,10 @@ interface AppSettings {
   dietStartDate: string | null;
   weightLossPerWeekLbs: number | null;
   weightGoalLbs: number | null;
+  carbLimitPerDay: number | null;
+  calorieLimitPerDay: number | null;
+  dailyStepsGoal: number | null;
+  desiredSleepHours: number | null;
 }
 
 interface AppData {
@@ -67,6 +97,7 @@ interface AppData {
   settings: AppSettings;
   meta: {
     workouts: MetaItem[];
+    subjects: MetaItem[];
     children: MetaItem[];
     chores: MetaItem[];
     substances: MetaItem[];
@@ -75,9 +106,11 @@ interface AppData {
     weight: WeightEntry[];
     fasting: FastingEntry[];
     carbs: CarbsEntry[];
+    calories: CaloriesEntry[];
     workouts: WorkoutEntry[];
     steps: StepsEntry[];
     sleep: SleepEntry[];
+    mood: MoodEntry[];
     homework: HomeworkEntry[];
     cleaning: ChoreEntry[];
     substances: SubstanceEntry[];
@@ -89,9 +122,11 @@ const TRACKER_KEYS: TrackerKey[] = [
   "weight",
   "fasting",
   "carbs",
+  "calories",
   "workouts",
   "steps",
   "sleep",
+  "mood",
   "homework",
   "cleaning",
   "substances"
@@ -112,10 +147,15 @@ function createDefaultData(): AppData {
       startingWeightLbs: null,
       dietStartDate: null,
       weightLossPerWeekLbs: null,
-      weightGoalLbs: null
+      weightGoalLbs: null,
+      carbLimitPerDay: null,
+      calorieLimitPerDay: null,
+      dailyStepsGoal: null,
+      desiredSleepHours: null
     },
     meta: {
       workouts: [],
+      subjects: [],
       children: [],
       chores: [],
       substances: []
@@ -124,9 +164,11 @@ function createDefaultData(): AppData {
       weight: [],
       fasting: [],
       carbs: [],
+      calories: [],
       workouts: [],
       steps: [],
       sleep: [],
+      mood: [],
       homework: [],
       cleaning: [],
       substances: []
@@ -173,6 +215,14 @@ function parseOptionalNumber(value: unknown): number | null {
 function parseOptionalNonNegativeNumber(value: unknown): number | null {
   const parsed = parseOptionalNumber(value);
   if (parsed === null || parsed < 0) {
+    return null;
+  }
+  return parsed;
+}
+
+function parseOptionalRangedNumber(value: unknown, min: number, max: number): number | null {
+  const parsed = parseOptionalNumber(value);
+  if (parsed === null || parsed < min || parsed > max) {
     return null;
   }
   return parsed;
@@ -248,9 +298,14 @@ function sanitizeData(value: unknown): AppData {
   const dietStartDate = parseDate(settingsRaw.dietStartDate);
   const weightLossPerWeekLbs = parseOptionalNonNegativeNumber(settingsRaw.weightLossPerWeekLbs);
   const weightGoalLbs = parseOptionalNonNegativeNumber(settingsRaw.weightGoalLbs);
+  const carbLimitPerDay = parseOptionalNonNegativeNumber(settingsRaw.carbLimitPerDay);
+  const calorieLimitPerDay = parseOptionalNonNegativeNumber(settingsRaw.calorieLimitPerDay);
+  const dailyStepsGoal = parseOptionalNonNegativeNumber(settingsRaw.dailyStepsGoal);
+  const desiredSleepHours = parseOptionalRangedNumber(settingsRaw.desiredSleepHours, 3, 12);
 
   const meta = {
     workouts: sanitizeMetaList(metaRaw.workouts),
+    subjects: sanitizeMetaList(metaRaw.subjects),
     children: sanitizeMetaList(metaRaw.children),
     chores: sanitizeMetaList(metaRaw.chores),
     substances: sanitizeMetaList(metaRaw.substances)
@@ -297,6 +352,20 @@ function sanitizeData(value: unknown): AppData {
       } satisfies CarbsEntry;
     })
     .filter((entry): entry is CarbsEntry => entry !== null);
+
+  const calories = getRawEntryList(trackersRaw, "calories")
+    .map((entry) => {
+      const base = parseBaseEntry(entry);
+      if (!base || !isRecord(entry)) {
+        return null;
+      }
+      return {
+        ...base,
+        calories: parseRangedNumber(entry.calories, 0, 50000, 0),
+        notes: parseText(entry.notes)
+      } satisfies CaloriesEntry;
+    })
+    .filter((entry): entry is CaloriesEntry => entry !== null);
 
   const workouts = getRawEntryList(trackersRaw, "workouts")
     .map((entry) => {
@@ -346,12 +415,31 @@ function sanitizeData(value: unknown): AppData {
   const sleep = getRawEntryList(trackersRaw, "sleep")
     .map((entry) => {
       const base = parseBaseEntry(entry);
-      if (!base) {
+      if (!base || !isRecord(entry)) {
         return null;
       }
-      return { ...base } satisfies SleepEntry;
+      return {
+        ...base,
+        sleepTime: parseText(entry.sleepTime),
+        wakeTime: parseText(entry.wakeTime)
+      } satisfies SleepEntry;
     })
     .filter((entry): entry is SleepEntry => entry !== null);
+
+  const mood = getRawEntryList(trackersRaw, "mood")
+    .map((entry) => {
+      const base = parseBaseEntry(entry);
+      if (!base || !isRecord(entry)) {
+        return null;
+      }
+      return {
+        ...base,
+        moodStart: parseRangedNumber(entry.moodStart, 0, 10, 0),
+        moodEnd: parseRangedNumber(entry.moodEnd, 0, 10, 0),
+        notes: parseText(entry.notes)
+      } satisfies MoodEntry;
+    })
+    .filter((entry): entry is MoodEntry => entry !== null);
 
   const homework = getRawEntryList(trackersRaw, "homework")
     .map((entry) => {
@@ -361,6 +449,7 @@ function sanitizeData(value: unknown): AppData {
       }
       return {
         ...base,
+        subjectId: parseText(entry.subjectId),
         childId: parseText(entry.childId),
         minutes: parseRangedNumber(entry.minutes, 0, 1440, 0),
         notes: parseText(entry.notes)
@@ -403,16 +492,22 @@ function sanitizeData(value: unknown): AppData {
       startingWeightLbs,
       dietStartDate,
       weightLossPerWeekLbs,
-      weightGoalLbs
+      weightGoalLbs,
+      carbLimitPerDay,
+      calorieLimitPerDay,
+      dailyStepsGoal,
+      desiredSleepHours
     },
     meta,
     trackers: {
       weight,
       fasting,
       carbs,
+      calories,
       workouts,
       steps,
       sleep,
+      mood,
       homework,
       cleaning,
       substances
@@ -468,8 +563,8 @@ async function writeDataFile(value: unknown): Promise<AppData> {
 
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 820,
+    width: 1250,
+    height: 870,
     minWidth: 360,
     minHeight: 640,
     autoHideMenuBar: true,

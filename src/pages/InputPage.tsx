@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
+import { CaloriesByDateList } from "../components/CaloriesByDateList";
 import { SharedDateInput } from "../components/SharedDateInput";
 import { useAppData } from "../context/AppDataContext";
 import { isDisplayDate, todayDisplayDate } from "../lib/date";
@@ -17,7 +18,15 @@ export function InputPage() {
   const [fastingHours, setFastingHours] = useState("");
   const [stepsValue, setStepsValue] = useState("");
   const [carbsValue, setCarbsValue] = useState("");
+  const [caloriesValue, setCaloriesValue] = useState("");
+  const [caloriesNotes, setCaloriesNotes] = useState("");
+  const [sleepTime, setSleepTime] = useState("");
+  const [wakeTime, setWakeTime] = useState("");
+  const [moodStart, setMoodStart] = useState("");
+  const [moodEnd, setMoodEnd] = useState("");
+  const [moodNotes, setMoodNotes] = useState("");
   const [workoutMinutesById, setWorkoutMinutesById] = useState<Record<string, string>>({});
+  const [homeworkSubjectId, setHomeworkSubjectId] = useState("");
   const [homeworkChildId, setHomeworkChildId] = useState("");
   const [homeworkMinutes, setHomeworkMinutes] = useState("");
   const [homeworkNotes, setHomeworkNotes] = useState("");
@@ -66,6 +75,40 @@ export function InputPage() {
     return parsed;
   }
 
+  function normalizeNumberText(value: number): string {
+    if (Number.isInteger(value)) {
+      return String(value);
+    }
+    return value.toFixed(2).replace(/\.?0+$/, "");
+  }
+
+  function stepMinuteValue(raw: string, delta: 5 | -5): string {
+    const parsed = Number.parseFloat(raw.trim());
+    if (!Number.isFinite(parsed)) {
+      return delta > 0 ? "5" : "0";
+    }
+
+    if (delta > 0) {
+      if (parsed < 0) {
+        return "5";
+      }
+      return normalizeNumberText(parsed + 5);
+    }
+
+    return normalizeNumberText(Math.max(0, parsed - 5));
+  }
+
+  function nudgeWorkoutMinutes(workoutId: string, delta: 5 | -5): void {
+    setWorkoutMinutesById((previous) => ({
+      ...previous,
+      [workoutId]: stepMinuteValue(previous[workoutId] ?? "", delta)
+    }));
+  }
+
+  function nudgeHomeworkMinutes(delta: 5 | -5): void {
+    setHomeworkMinutes((previous) => stepMinuteValue(previous, delta));
+  }
+
   function showError(text: string): void {
     setIsToastHovered(false);
     setHasToastBeenHovered(false);
@@ -111,10 +154,24 @@ export function InputPage() {
       case "carbs":
         setCarbsValue("");
         break;
+      case "calories":
+        setCaloriesValue("");
+        setCaloriesNotes("");
+        break;
+      case "sleep":
+        setSleepTime("");
+        setWakeTime("");
+        break;
+      case "mood":
+        setMoodStart("");
+        setMoodEnd("");
+        setMoodNotes("");
+        break;
       case "workouts":
         setWorkoutMinutesById({});
         break;
       case "homework":
+        setHomeworkSubjectId("");
         setHomeworkChildId("");
         setHomeworkMinutes("");
         setHomeworkNotes("");
@@ -127,7 +184,6 @@ export function InputPage() {
         setSelectedSubstanceIds([]);
         setSubstanceNotes("");
         break;
-      case "sleep":
       default:
         break;
     }
@@ -187,10 +243,46 @@ export function InputPage() {
       return;
     }
 
+    if (trackerKey === "calories") {
+      const parsed = parseNumberInRange(caloriesValue, 0, 50000);
+      if (parsed === null) {
+        showError("Calories must be a number between 0 and 50000.");
+        return;
+      }
+      addTrackerEntry("calories", { date, calories: parsed, notes: caloriesNotes.trim() });
+      resetNonDateFields("calories");
+      showSuccess(`Calories entry added for ${date}.`);
+      return;
+    }
+
     if (trackerKey === "sleep") {
-      addTrackerEntry("sleep", { date });
+      const nextSleepTime = sleepTime.trim();
+      const nextWakeTime = wakeTime.trim();
+      if (!nextSleepTime || !nextWakeTime) {
+        showError("Sleep and wake times are required.");
+        return;
+      }
+      addTrackerEntry("sleep", { date, sleepTime: nextSleepTime, wakeTime: nextWakeTime });
       resetNonDateFields("sleep");
       showSuccess(`Sleep entry added for ${date}.`);
+      return;
+    }
+
+    if (trackerKey === "mood") {
+      const parsedMoodStart = parseNumberInRange(moodStart, 0, 10);
+      const parsedMoodEnd = parseNumberInRange(moodEnd, 0, 10);
+      if (parsedMoodStart === null || parsedMoodEnd === null) {
+        showError("Mood Start and Mood End must be numbers between 0 and 10.");
+        return;
+      }
+      addTrackerEntry("mood", {
+        date,
+        moodStart: parsedMoodStart,
+        moodEnd: parsedMoodEnd,
+        notes: moodNotes.trim()
+      });
+      resetNonDateFields("mood");
+      showSuccess(`Mood entry added for ${date}.`);
       return;
     }
 
@@ -219,8 +311,12 @@ export function InputPage() {
 
     if (trackerKey === "homework") {
       const minutes = parseNumberInRange(homeworkMinutes, 0, 1440);
+      if (!homeworkSubjectId) {
+        showError("Select a subject for homework.");
+        return;
+      }
       if (!homeworkChildId) {
-        showError("Select a child for homework.");
+        showError("Select a student for homework.");
         return;
       }
       if (minutes === null) {
@@ -230,6 +326,7 @@ export function InputPage() {
 
       addTrackerEntry("homework", {
         date,
+        subjectId: homeworkSubjectId,
         childId: homeworkChildId,
         minutes,
         notes: homeworkNotes.trim()
@@ -300,7 +397,9 @@ export function InputPage() {
             <h1 className="h4 mb-2">{trackerLabels[trackerKey]} Entry</h1>
             <p className="text-secondary mb-3">Inputs are managed separately from tracker views.</p>
 
-            <SharedDateInput id="entry-date" label="Date" value={date} onChange={setDate} required />
+            <SharedDateInput id="entry-date" label="Date" value={date} onChange={setDate} required allowDayStepper />
+
+            {trackerKey === "calories" ? <CaloriesByDateList date={date} entries={data.trackers.calories} /> : null}
 
             {trackerKey === "weight" ? (
               <div className="mb-3">
@@ -374,6 +473,38 @@ export function InputPage() {
               </div>
             ) : null}
 
+            {trackerKey === "calories" ? (
+              <>
+                <div className="mb-3">
+                  <label htmlFor="calories-value" className="form-label fw-semibold">
+                    Calories
+                  </label>
+                  <input
+                    id="calories-value"
+                    type="number"
+                    className="form-control shared-date-input"
+                    min={0}
+                    max={50000}
+                    step="any"
+                    value={caloriesValue}
+                    onChange={(event) => setCaloriesValue(event.target.value)}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="calories-notes" className="form-label fw-semibold">
+                    Notes
+                  </label>
+                  <textarea
+                    id="calories-notes"
+                    className="form-control"
+                    rows={3}
+                    value={caloriesNotes}
+                    onChange={(event) => setCaloriesNotes(event.target.value)}
+                  />
+                </div>
+              </>
+            ) : null}
+
             {trackerKey === "workouts" ? (
               <>
                 {data.meta.workouts.length === 0 ? (
@@ -387,28 +518,46 @@ export function InputPage() {
                       {data.meta.workouts.map((item) => {
                         const isSelected = workoutMinutesById[item.id] !== undefined;
                         return (
-                          <div key={item.id} className="d-flex gap-2 align-items-center">
+                          <div key={item.id} className="workout-minute-row">
                             <button
                               type="button"
-                              className={`btn ${isSelected ? "btn-success" : "flag-toggle"}`}
+                              className={`btn workout-toggle-btn ${isSelected ? "btn-success" : "flag-toggle"}`}
                               onClick={() => toggleWorkout(item.id)}
                             >
                               {item.name}
                             </button>
                             {isSelected ? (
-                              <input
-                                type="number"
-                                className="form-control form-control-sm shared-date-input"
-                                min={0}
-                                max={1440}
-                                step="any"
-                                value={workoutMinutesById[item.id]}
-                                onChange={(event) =>
-                                  setWorkoutMinutesById((previous) => ({ ...previous, [item.id]: event.target.value }))
-                                }
-                              />
+                              <div className="d-flex align-items-center gap-2 workout-minute-controls">
+                                <input
+                                  type="number"
+                                  className="form-control form-control-sm shared-date-input minutes-selector-input"
+                                  min={0}
+                                  max={1440}
+                                  step="any"
+                                  value={workoutMinutesById[item.id]}
+                                  onChange={(event) =>
+                                    setWorkoutMinutesById((previous) => ({ ...previous, [item.id]: event.target.value }))
+                                  }
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-secondary btn-sm minutes-step-btn"
+                                  aria-label={`Subtract 5 minutes from ${item.name}`}
+                                  onClick={() => nudgeWorkoutMinutes(item.id, -5)}
+                                >
+                                  -
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline-secondary btn-sm minutes-step-btn"
+                                  aria-label={`Add 5 minutes to ${item.name}`}
+                                  onClick={() => nudgeWorkoutMinutes(item.id, 5)}
+                                >
+                                  +
+                                </button>
+                                <span className="small text-secondary mb-0">minutes</span>
+                              </div>
                             ) : null}
-                            {isSelected ? <span className="small text-secondary">minutes</span> : null}
                           </div>
                         );
                       })}
@@ -418,17 +567,113 @@ export function InputPage() {
               </>
             ) : null}
 
+            {trackerKey === "sleep" ? (
+              <>
+                <div className="mb-3">
+                  <label htmlFor="sleep-time" className="form-label fw-semibold">
+                    Time of Sleep (Previous Day)
+                  </label>
+                  <input
+                    id="sleep-time"
+                    type="text"
+                    className="form-control shared-date-input"
+                    value={sleepTime}
+                    placeholder="e.g. 11:30 PM"
+                    onChange={(event) => setSleepTime(event.target.value)}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="wake-time" className="form-label fw-semibold">
+                    Wake Up Time
+                  </label>
+                  <input
+                    id="wake-time"
+                    type="text"
+                    className="form-control shared-date-input"
+                    value={wakeTime}
+                    placeholder="e.g. 06:15 AM"
+                    onChange={(event) => setWakeTime(event.target.value)}
+                  />
+                </div>
+              </>
+            ) : null}
+
+            {trackerKey === "mood" ? (
+              <>
+                <div className="mb-3">
+                  <label htmlFor="mood-start" className="form-label fw-semibold">
+                    Mood Start
+                  </label>
+                  <input
+                    id="mood-start"
+                    type="number"
+                    className="form-control shared-date-input"
+                    min={0}
+                    max={10}
+                    step="any"
+                    value={moodStart}
+                    onChange={(event) => setMoodStart(event.target.value)}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="mood-end" className="form-label fw-semibold">
+                    Mood End
+                  </label>
+                  <input
+                    id="mood-end"
+                    type="number"
+                    className="form-control shared-date-input"
+                    min={0}
+                    max={10}
+                    step="any"
+                    value={moodEnd}
+                    onChange={(event) => setMoodEnd(event.target.value)}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="mood-notes" className="form-label fw-semibold">
+                    Notes
+                  </label>
+                  <textarea
+                    id="mood-notes"
+                    className="form-control"
+                    rows={3}
+                    value={moodNotes}
+                    onChange={(event) => setMoodNotes(event.target.value)}
+                  />
+                </div>
+              </>
+            ) : null}
+
             {trackerKey === "homework" ? (
               <>
-                {data.meta.children.length === 0 ? (
+                {data.meta.subjects.length === 0 || data.meta.children.length === 0 ? (
                   <div className="alert alert-warning">
-                    Add children in Meta first. <Link to="/settings/meta">Open Metadata</Link>
+                    Add subjects and students in Meta first. <Link to="/settings/meta">Open Metadata</Link>
                   </div>
                 ) : (
                   <>
                     <div className="mb-3">
+                      <label htmlFor="homework-subject" className="form-label fw-semibold">
+                        Subject
+                      </label>
+                      <select
+                        id="homework-subject"
+                        className="form-select shared-date-input"
+                        value={homeworkSubjectId}
+                        onChange={(event) => setHomeworkSubjectId(event.target.value)}
+                      >
+                        <option value="">Select subject</option>
+                        {data.meta.subjects.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mb-3">
                       <label htmlFor="homework-child" className="form-label fw-semibold">
-                        Child
+                        Student
                       </label>
                       <select
                         id="homework-child"
@@ -436,7 +681,7 @@ export function InputPage() {
                         value={homeworkChildId}
                         onChange={(event) => setHomeworkChildId(event.target.value)}
                       >
-                        <option value="">Select child</option>
+                        <option value="">Select student</option>
                         {data.meta.children.map((item) => (
                           <option key={item.id} value={item.id}>
                             {item.name}
@@ -448,16 +693,34 @@ export function InputPage() {
                       <label htmlFor="homework-minutes" className="form-label fw-semibold">
                         Minutes
                       </label>
-                      <input
-                        id="homework-minutes"
-                        type="number"
-                        className="form-control shared-date-input"
-                        min={0}
-                        max={1440}
-                        step="any"
-                        value={homeworkMinutes}
-                        onChange={(event) => setHomeworkMinutes(event.target.value)}
-                      />
+                      <div className="d-flex align-items-center gap-2">
+                        <input
+                          id="homework-minutes"
+                          type="number"
+                          className="form-control shared-date-input minutes-selector-input"
+                          min={0}
+                          max={1440}
+                          step="any"
+                          value={homeworkMinutes}
+                          onChange={(event) => setHomeworkMinutes(event.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm minutes-step-btn"
+                          aria-label="Subtract 5 homework minutes"
+                          onClick={() => nudgeHomeworkMinutes(-5)}
+                        >
+                          -
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm minutes-step-btn"
+                          aria-label="Add 5 homework minutes"
+                          onClick={() => nudgeHomeworkMinutes(5)}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                     <div className="mb-3">
                       <label htmlFor="homework-notes" className="form-label fw-semibold">

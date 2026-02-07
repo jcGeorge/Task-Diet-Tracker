@@ -2,9 +2,11 @@ export const trackerKeys = [
   "weight",
   "fasting",
   "carbs",
+  "calories",
   "workouts",
   "steps",
   "sleep",
+  "mood",
   "homework",
   "cleaning",
   "substances"
@@ -12,7 +14,7 @@ export const trackerKeys = [
 
 export type TrackerKey = (typeof trackerKeys)[number];
 export type ThemeMode = "light" | "dark";
-export type MetaListKey = "workouts" | "children" | "chores" | "substances";
+export type MetaListKey = "workouts" | "subjects" | "children" | "chores" | "substances";
 
 export interface BaseTrackerEntry {
   id: string;
@@ -31,6 +33,11 @@ export interface CarbsEntry extends BaseTrackerEntry {
   carbs: number;
 }
 
+export interface CaloriesEntry extends BaseTrackerEntry {
+  calories: number;
+  notes: string;
+}
+
 export interface WorkoutActivity {
   metaId: string;
   minutes: number;
@@ -44,9 +51,19 @@ export interface StepsEntry extends BaseTrackerEntry {
   steps: number;
 }
 
-export interface SleepEntry extends BaseTrackerEntry {}
+export interface SleepEntry extends BaseTrackerEntry {
+  sleepTime: string;
+  wakeTime: string;
+}
+
+export interface MoodEntry extends BaseTrackerEntry {
+  moodStart: number;
+  moodEnd: number;
+  notes: string;
+}
 
 export interface HomeworkEntry extends BaseTrackerEntry {
+  subjectId: string;
   childId: string;
   minutes: number;
   notes: string;
@@ -69,6 +86,7 @@ export interface MetaItem {
 
 export interface MetaLists {
   workouts: MetaItem[];
+  subjects: MetaItem[];
   children: MetaItem[];
   chores: MetaItem[];
   substances: MetaItem[];
@@ -78,9 +96,11 @@ export interface TrackerEntryByKey {
   weight: WeightEntry;
   fasting: FastingEntry;
   carbs: CarbsEntry;
+  calories: CaloriesEntry;
   workouts: WorkoutEntry;
   steps: StepsEntry;
   sleep: SleepEntry;
+  mood: MoodEntry;
   homework: HomeworkEntry;
   cleaning: ChoreEntry;
   substances: SubstanceEntry;
@@ -95,6 +115,10 @@ export interface AppSettings {
   dietStartDate: string | null;
   weightLossPerWeekLbs: number | null;
   weightGoalLbs: number | null;
+  carbLimitPerDay: number | null;
+  calorieLimitPerDay: number | null;
+  dailyStepsGoal: number | null;
+  desiredSleepHours: number | null;
 }
 
 export interface AppData {
@@ -109,9 +133,11 @@ export const trackerLabels: Record<TrackerKey, string> = {
   weight: "Weight",
   fasting: "Fasting",
   carbs: "Carbs",
+  calories: "Calories",
   workouts: "Workouts",
   steps: "Steps",
   sleep: "Sleep",
+  mood: "Mood",
   homework: "Homework",
   cleaning: "Chores",
   substances: "Substances"
@@ -119,7 +145,8 @@ export const trackerLabels: Record<TrackerKey, string> = {
 
 export const metaLabels: Record<MetaListKey, string> = {
   workouts: "Workouts",
-  children: "Children",
+  subjects: "Subjects",
+  children: "Students",
   chores: "Chores",
   substances: "Substances"
 };

@@ -314,6 +314,10 @@ export function WeightGraph({ settings, entries }: WeightGraphProps) {
           <span className="graph-metric-value">{formatTooltipDate(expectedGoalDate)}</span>
         </div>
         <div className="graph-metric">
+          <span className="graph-metric-label">Projected Weekly Weight Loss</span>
+          <span className="graph-metric-value">{`${formatWeight(expectedLossPerWeek)} lbs/week`}</span>
+        </div>
+        <div className="graph-metric">
           <span className="graph-metric-label">Actual Estimated Goal Date</span>
           <span className="graph-metric-value">
             {actualGoalDate ? formatTooltipDate(actualGoalDate) : "Not enough data"}

@@ -1,6 +1,20 @@
 import { Link } from "react-router-dom";
 import { useAppData } from "../context/AppDataContext";
-import { trackerKeys, trackerLabels } from "../types";
+import { trackerLabels, type TrackerKey } from "../types";
+
+const hubOrder: TrackerKey[] = [
+  "weight",
+  "steps",
+  "carbs",
+  "calories",
+  "workouts",
+  "fasting",
+  "mood",
+  "sleep",
+  "cleaning",
+  "homework",
+  "substances"
+];
 
 export function HomePage() {
   const { data } = useAppData();
@@ -16,10 +30,10 @@ export function HomePage() {
 
       <h2 className="h5 mb-3">Trackers</h2>
       <div className="row g-3 mb-4">
-        {trackerKeys.map((trackerKey) => (
-          <div key={trackerKey} className="col-12 col-md-6 col-lg-4">
+        {hubOrder.map((trackerKey) => (
+          <div key={trackerKey} className="col-12 col-md-6 col-lg-4 col-xl-3">
             <div className="card border-0 shadow-sm h-100 tracker-card">
-              <div className="card-body d-flex flex-column">
+              <div className="card-body d-flex flex-column hub-card-body">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h2 className="h5 mb-0">{trackerLabels[trackerKey]}</h2>
                   <span className="text-secondary fs-6">Entries: {data.trackers[trackerKey].length}</span>
@@ -35,10 +49,10 @@ export function HomePage() {
 
       <h2 className="h5 mb-3">Inputs</h2>
       <div className="row g-3">
-        {trackerKeys.map((trackerKey) => (
-          <div key={`input-${trackerKey}`} className="col-12 col-md-6 col-lg-4">
+        {hubOrder.map((trackerKey) => (
+          <div key={`input-${trackerKey}`} className="col-12 col-md-6 col-lg-4 col-xl-3">
             <div className="card border-0 shadow-sm h-100 tracker-card">
-              <div className="card-body d-flex flex-column">
+              <div className="card-body d-flex flex-column hub-card-body">
                 <h2 className="h5 mb-3">{trackerLabels[trackerKey]}</h2>
                 <Link className="btn btn-success mt-auto" to={`/input/${trackerKey}`}>
                   Open Input

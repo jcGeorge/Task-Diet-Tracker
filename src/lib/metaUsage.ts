@@ -4,6 +4,8 @@ export function getMetaItemUsageCount(data: AppData, listKey: MetaListKey, itemI
   switch (listKey) {
     case "workouts":
       return data.trackers.workouts.filter((entry) => entry.activities.some((activity) => activity.metaId === itemId)).length;
+    case "subjects":
+      return data.trackers.homework.filter((entry) => entry.subjectId === itemId).length;
     case "children":
       return data.trackers.homework.filter((entry) => entry.childId === itemId).length;
     case "chores":
@@ -14,4 +16,3 @@ export function getMetaItemUsageCount(data: AppData, listKey: MetaListKey, itemI
       return 0;
   }
 }
-

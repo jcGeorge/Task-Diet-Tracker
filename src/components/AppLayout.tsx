@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAppData } from "../context/AppDataContext";
 import { trackerKeys, trackerLabels, type TrackerKey } from "../types";
 
@@ -43,9 +43,15 @@ export function AppLayout() {
       <header className="app-header sticky-top">
         <nav className="navbar navbar-expand-lg">
           <div className="container-fluid app-toolbar">
-            <Link to="/" className={`navbar-brand fw-bold brand-link ${isHomeRoute ? "brand-link-active" : ""}`}>
-              Home
-            </Link>
+            <button
+              className="btn btn-outline-secondary settings-btn header-left-btn"
+              type="button"
+              aria-label="Theme"
+              title="Theme"
+              onClick={() => updateSettings({ theme: isLightTheme ? "dark" : "light" })}
+            >
+              <i className={`bi ${isLightTheme ? "bi-sun-fill" : "bi-moon-fill"}`} aria-hidden="true" />
+            </button>
 
             <div className="toolbar-controls">
               <label htmlFor="tracker-nav" className="visually-hidden">
@@ -91,13 +97,14 @@ export function AppLayout() {
               </select>
 
               <button
-                className="btn btn-outline-secondary settings-btn"
+                className={`btn btn-outline-secondary settings-btn ${isHomeRoute ? "toolbar-btn-active" : ""}`}
                 type="button"
-                aria-label="Theme"
-                title="Theme"
-                onClick={() => updateSettings({ theme: isLightTheme ? "dark" : "light" })}
+                aria-label="Home"
+                title="Home"
+                aria-current={isHomeRoute ? "page" : undefined}
+                onClick={() => navigate("/")}
               >
-                <i className={`bi ${isLightTheme ? "bi-sun-fill" : "bi-moon-fill"}`} aria-hidden="true" />
+                <i className="bi bi-house-fill" aria-hidden="true" />
               </button>
 
               <button

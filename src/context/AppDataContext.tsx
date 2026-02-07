@@ -34,6 +34,7 @@ interface AppDataContextValue {
   removeMetaItem: (listKey: MetaListKey, itemId: string) => { ok: boolean; reason?: string };
   importFromJson: () => Promise<boolean>;
   exportToJson: () => Promise<boolean>;
+  exportProvidedData: (exportData: AppData) => Promise<boolean>;
   clearError: () => void;
 }
 
@@ -147,9 +148,11 @@ export function AppDataProvider({ children }: PropsWithChildren) {
         weight: [],
         fasting: [],
         carbs: [],
+        calories: [],
         workouts: [],
         steps: [],
         sleep: [],
+        mood: [],
         homework: [],
         cleaning: [],
         substances: []
@@ -176,9 +179,11 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       const remainingWeight = previous.trackers.weight.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingFasting = previous.trackers.fasting.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingCarbs = previous.trackers.carbs.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
+      const remainingCalories = previous.trackers.calories.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingWorkouts = previous.trackers.workouts.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingSteps = previous.trackers.steps.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingSleep = previous.trackers.sleep.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
+      const remainingMood = previous.trackers.mood.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingHomework = previous.trackers.homework.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingCleaning = previous.trackers.cleaning.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingSubstances = previous.trackers.substances.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
@@ -186,9 +191,11 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       removedCount += previous.trackers.weight.length - remainingWeight.length;
       removedCount += previous.trackers.fasting.length - remainingFasting.length;
       removedCount += previous.trackers.carbs.length - remainingCarbs.length;
+      removedCount += previous.trackers.calories.length - remainingCalories.length;
       removedCount += previous.trackers.workouts.length - remainingWorkouts.length;
       removedCount += previous.trackers.steps.length - remainingSteps.length;
       removedCount += previous.trackers.sleep.length - remainingSleep.length;
+      removedCount += previous.trackers.mood.length - remainingMood.length;
       removedCount += previous.trackers.homework.length - remainingHomework.length;
       removedCount += previous.trackers.cleaning.length - remainingCleaning.length;
       removedCount += previous.trackers.substances.length - remainingSubstances.length;
@@ -201,9 +208,11 @@ export function AppDataProvider({ children }: PropsWithChildren) {
         weight: remainingWeight,
         fasting: remainingFasting,
         carbs: remainingCarbs,
+        calories: remainingCalories,
         workouts: remainingWorkouts,
         steps: remainingSteps,
         sleep: remainingSleep,
+        mood: remainingMood,
         homework: remainingHomework,
         cleaning: remainingCleaning,
         substances: remainingSubstances
@@ -353,6 +362,15 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     }
   }, [data]);
 
+  const exportProvidedData = useCallback(async (exportData: AppData): Promise<boolean> => {
+    try {
+      return await window.taskTrackerApi.exportData(exportData);
+    } catch {
+      setError("Export failed.");
+      return false;
+    }
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -372,6 +390,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       removeMetaItem,
       importFromJson,
       exportToJson,
+      exportProvidedData,
       clearError
     }),
     [
@@ -388,6 +407,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       removeMetaItem,
       importFromJson,
       exportToJson,
+      exportProvidedData,
       clearError
     ]
   );

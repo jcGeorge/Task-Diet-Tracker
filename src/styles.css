@@ -58,16 +58,8 @@ body {
   gap: 0.75rem;
 }
 
-.brand-link {
-  color: var(--bs-primary);
+.header-left-btn {
   margin-left: 7px;
-  padding-right: 7px;
-}
-
-.brand-link-active {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.24rem;
 }
 
 .toolbar-controls {
@@ -124,6 +116,51 @@ html[data-bs-theme="dark"] .form-select.tracker-select-active:focus {
 .shared-date-input {
   width: 40%;
   min-width: 180px;
+}
+
+.shared-date-input-row .shared-date-input {
+  flex: 0 1 40%;
+}
+
+.shared-date-nav-btn {
+  min-width: 2.25rem;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+}
+
+.minutes-selector-input {
+  width: 16%;
+  min-width: 92px;
+}
+
+.workout-minute-row {
+  display: grid;
+  grid-template-columns: 130px auto;
+  align-items: center;
+  column-gap: 0.75rem;
+}
+
+.workout-toggle-btn {
+  width: 130px;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.workout-minute-controls {
+  min-width: 0;
+}
+
+.minutes-step-btn {
+  min-width: 2.4rem;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  padding-left: 0.55rem;
+  padding-right: 0.55rem;
 }
 
 .app-body {
@@ -203,6 +240,15 @@ html[data-bs-theme="dark"] .form-select.tracker-select-active:focus {
   max-width: 224px;
 }
 
+.hub-card-body {
+  padding-left: 0.6875rem;
+  padding-right: 0.6875rem;
+}
+
+.calories-sub-item {
+  padding-left: 5px !important;
+}
+
 .entry-form-divider {
   border: 0;
   border-top: 1px solid color-mix(in srgb, var(--app-border) 76%, transparent);
@@ -247,6 +293,45 @@ html[data-bs-theme="dark"] .entry-form-divider {
   width: 100%;
 }
 
+.substances-histogram-wrap {
+  width: 100%;
+}
+
+.workouts-composition-wrap {
+  width: 100%;
+}
+
+.threshold-chart-wrap {
+  width: 100%;
+}
+
+.workouts-composition-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 0.6rem;
+  background-color: color-mix(in srgb, var(--app-card-bg) 90%, transparent);
+}
+
+.threshold-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 0.6rem;
+  background-color: color-mix(in srgb, var(--app-card-bg) 90%, transparent);
+}
+
+.substances-histogram-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 0.6rem;
+  background-color: color-mix(in srgb, var(--app-card-bg) 90%, transparent);
+}
+
 .weight-graph-svg {
   display: block;
   width: 100%;
@@ -260,6 +345,32 @@ html[data-bs-theme="dark"] .entry-form-divider {
   display: flex;
   gap: 1rem;
   align-items: center;
+}
+
+.workouts-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.55rem;
+}
+
+.workout-legend-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  min-width: 150px;
+}
+
+.workout-legend-btn-active {
+  filter: brightness(1.07);
+  box-shadow: 0 0 0 0.14rem rgba(var(--bs-primary-rgb), 0.18);
+}
+
+.workout-legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex: 0 0 auto;
 }
 
 .legend-item {
@@ -367,7 +478,17 @@ html[data-bs-theme="light"] .form-control[type="date"]::-webkit-calendar-picker-
   }
 
   .meta-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .meta-row > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .meta-row > :not(:first-child) {
+    width: 100%;
+    min-width: 0;
   }
 
   .delete-date-input {
@@ -375,6 +496,26 @@ html[data-bs-theme="light"] .form-control[type="date"]::-webkit-calendar-picker-
   }
 
   .shared-date-input {
+    width: 100%;
+  }
+
+  .shared-date-input-row .shared-date-input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+
+  .minutes-selector-input {
+    width: 40%;
+    min-width: 0;
+  }
+
+  .workout-minute-row {
+    grid-template-columns: 1fr;
+    row-gap: 0.45rem;
+  }
+
+  .workout-toggle-btn {
     width: 100%;
   }
 

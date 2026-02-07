@@ -2,20 +2,80 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAppData } from "../context/AppDataContext";
 import { displayDateToIso, isDisplayDate, isoToDisplayDate, todayDisplayDate } from "../lib/date";
+import { trackerKeys, type AppData } from "../types";
 
 type Notice = { tone: "success" | "danger"; message: string } | null;
 type DeleteModalKind = "all" | "before" | null;
 
+function countTrackerEntries(trackers: AppData["trackers"]): number {
+  return trackerKeys.reduce((total, key) => total + trackers[key].length, 0);
+}
+
+function buildBackupDataBeforeDate(source: AppData, beforeDate: string): AppData {
+  const cutoffIsoDate = displayDateToIso(beforeDate);
+  if (!cutoffIsoDate) {
+    return {
+      ...source,
+      trackers: {
+        weight: [],
+        fasting: [],
+        carbs: [],
+        calories: [],
+        workouts: [],
+        steps: [],
+        sleep: [],
+        mood: [],
+        homework: [],
+        cleaning: [],
+        substances: []
+      },
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  const trackers: AppData["trackers"] = {
+    weight: source.trackers.weight.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    fasting: source.trackers.fasting.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    carbs: source.trackers.carbs.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    calories: source.trackers.calories.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    workouts: source.trackers.workouts.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    steps: source.trackers.steps.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    sleep: source.trackers.sleep.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    mood: source.trackers.mood.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    homework: source.trackers.homework.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    cleaning: source.trackers.cleaning.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    substances: source.trackers.substances.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate)
+  };
+
+  return {
+    ...source,
+    trackers,
+    updatedAt: new Date().toISOString()
+  };
+}
+
 export function SettingsPage() {
-  const { data, updateSettings, importFromJson, exportToJson, clearAllTrackerEntries, clearTrackerEntriesBefore } =
-    useAppData();
-  const [busyAction, setBusyAction] = useState<"import" | "export" | "delete-all" | "delete-before" | null>(null);
+  const {
+    data,
+    updateSettings,
+    importFromJson,
+    exportToJson,
+    exportProvidedData,
+    clearAllTrackerEntries,
+    clearTrackerEntriesBefore
+  } = useAppData();
+  const [busyAction, setBusyAction] = useState<
+    "import" | "export" | "delete-all" | "delete-before" | "backup-delete-before" | null
+  >(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [deleteModalKind, setDeleteModalKind] = useState<DeleteModalKind>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [deleteBeforeDate, setDeleteBeforeDate] = useState(todayDisplayDate());
-  const isDeletePending = busyAction === "delete-all" || busyAction === "delete-before";
+  const isDeletePending =
+    busyAction === "delete-all" || busyAction === "delete-before" || busyAction === "backup-delete-before";
+  const isImportPending = busyAction === "import";
 
-  const handleImport = async () => {
+  const handleImportConfirm = async () => {
     setBusyAction("import");
     setNotice(null);
     const imported = await importFromJson();
@@ -25,6 +85,12 @@ export function SettingsPage() {
         : { tone: "danger", message: "Import was canceled or failed." }
     );
     setBusyAction(null);
+    setIsImportModalOpen(false);
+  };
+
+  const handleImportClick = () => {
+    setDeleteModalKind(null);
+    setIsImportModalOpen(true);
   };
 
   const handleExport = async () => {
@@ -88,6 +154,44 @@ export function SettingsPage() {
     }
   };
 
+  const handleBackupAndDeleteBefore = async () => {
+    if (!isDisplayDate(deleteBeforeDate)) {
+      setNotice({ tone: "danger", message: "Please choose a valid date for Delete Before." });
+      setDeleteModalKind(null);
+      return;
+    }
+
+    const backupData = buildBackupDataBeforeDate(data, deleteBeforeDate);
+    const backupCount = countTrackerEntries(backupData.trackers);
+    if (backupCount === 0) {
+      setNotice({ tone: "danger", message: `No non-meta data entries were found before ${deleteBeforeDate}.` });
+      setDeleteModalKind(null);
+      return;
+    }
+
+    setBusyAction("backup-delete-before");
+    setNotice(null);
+
+    const exported = await exportProvidedData(backupData);
+    if (!exported) {
+      setNotice({ tone: "danger", message: "Backup export was canceled or failed. No data was deleted." });
+      setBusyAction(null);
+      setDeleteModalKind(null);
+      return;
+    }
+
+    const removedCount = clearTrackerEntriesBefore(deleteBeforeDate);
+    setNotice({
+      tone: "success",
+      message:
+        removedCount === 0
+          ? `Backup saved, but no non-meta data entries were found before ${deleteBeforeDate}.`
+          : `Backup saved and deleted ${removedCount} non-meta data entr${removedCount === 1 ? "y" : "ies"} before ${deleteBeforeDate}.`
+    });
+    setBusyAction(null);
+    setDeleteModalKind(null);
+  };
+
   return (
     <>
       <section className="row g-3">
@@ -126,7 +230,7 @@ export function SettingsPage() {
               <div className="mb-4">
                 <h2 className="h6 text-uppercase text-secondary">JSON Data</h2>
                 <div className="d-flex gap-2 flex-wrap">
-                  <button className="btn btn-outline-primary" type="button" disabled={!!busyAction} onClick={handleImport}>
+                  <button className="btn btn-outline-primary" type="button" disabled={!!busyAction} onClick={handleImportClick}>
                     {busyAction === "import" ? "Importing..." : "Import JSON"}
                   </button>
                   <button className="btn btn-outline-primary" type="button" disabled={!!busyAction} onClick={handleExport}>
@@ -163,6 +267,61 @@ export function SettingsPage() {
           </div>
         </div>
       </section>
+
+      {isImportModalOpen ? (
+        <>
+          <div
+            className="modal fade show d-block"
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            onClick={(event) => {
+              if (!isImportPending && event.target === event.currentTarget) {
+                setIsImportModalOpen(false);
+              }
+            }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h2 className="modal-title fs-5">Confirm Import</h2>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Close"
+                    disabled={isImportPending}
+                    onClick={() => setIsImportModalOpen(false)}
+                  />
+                </div>
+                <div className="modal-body">
+                  This will replace all your current data, are you sure you want to continue?
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    disabled={isImportPending}
+                    onClick={() => setIsImportModalOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={isImportPending}
+                    onClick={() => {
+                      void handleImportConfirm();
+                    }}
+                  >
+                    {isImportPending ? "Importing..." : "Continue Import"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" />
+        </>
+      ) : null}
 
       {deleteModalKind ? (
         <>
@@ -203,8 +362,20 @@ export function SettingsPage() {
                   >
                     Cancel
                   </button>
+                  {deleteModalKind === "before" ? (
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary"
+                      disabled={isDeletePending}
+                      onClick={() => {
+                        void handleBackupAndDeleteBefore();
+                      }}
+                    >
+                      {busyAction === "backup-delete-before" ? "Backing Up..." : "Backup + Delete"}
+                    </button>
+                  ) : null}
                   <button type="button" className="btn btn-danger" disabled={isDeletePending} onClick={handleConfirmDelete}>
-                    {isDeletePending ? "Deleting..." : "Confirm Delete"}
+                    {busyAction === "delete-all" || busyAction === "delete-before" ? "Deleting..." : "Confirm Delete"}
                   </button>
                 </div>
               </div>

@@ -8,10 +8,11 @@ import { metaLabels, type MetaListKey } from "../types";
 
 type Notice = { tone: "success" | "danger"; message: string } | null;
 
-const metaSections: MetaListKey[] = ["workouts", "children", "chores", "substances"];
+const allMetaSections: MetaListKey[] = ["workouts", "subjects", "children", "chores", "substances"];
 const singularLabels: Record<MetaListKey, string> = {
   workouts: "workout",
-  children: "child",
+  subjects: "subject",
+  children: "student",
   chores: "chore",
   substances: "substance"
 };
@@ -20,6 +21,7 @@ export function MetaPage() {
   const { data, updateSettings, addMetaItem, renameMetaItem, removeMetaItem } = useAppData();
   const [addDrafts, setAddDrafts] = useState<Record<MetaListKey, string>>({
     workouts: "",
+    subjects: "",
     children: "",
     chores: "",
     substances: ""
@@ -52,7 +54,7 @@ export function MetaPage() {
 
   const usageByItemId = useMemo(() => {
     const usage: Record<string, number> = {};
-    for (const listKey of metaSections) {
+    for (const listKey of allMetaSections) {
       for (const item of data.meta[listKey]) {
         usage[`${listKey}:${item.id}`] = getMetaItemUsageCount(data, listKey, item.id);
       }
@@ -108,9 +110,92 @@ export function MetaPage() {
     return parsed;
   };
 
+  const parseDecimalInRange = (raw: string, min: number, max: number): number | null => {
+    if (raw.trim() === "") {
+      return null;
+    }
+    const parsed = Number.parseFloat(raw);
+    if (Number.isNaN(parsed) || parsed < min || parsed > max) {
+      return null;
+    }
+    return parsed;
+  };
+
+  const renderMetaListEditor = (listKey: MetaListKey) => (
+    <>
+      <h3 className="h6 mb-2">{metaLabels[listKey]}</h3>
+      <form
+        className="d-flex gap-2 mb-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleAdd(listKey);
+        }}
+      >
+        <input
+          className="form-control"
+          placeholder={`Add ${singularLabels[listKey]}...`}
+          value={addDrafts[listKey]}
+          onChange={(event) =>
+            setAddDrafts((previous) => ({ ...previous, [listKey]: event.target.value }))
+          }
+        />
+        <button type="submit" className="btn btn-primary">
+          Add
+        </button>
+      </form>
+
+      {data.meta[listKey].length === 0 ? (
+        <p className="text-secondary mb-0">No items yet.</p>
+      ) : (
+        <div className="d-flex flex-column gap-2 mb-3">
+          {data.meta[listKey].map((item) => {
+            const mapKey = `${listKey}:${item.id}`;
+            const usageCount = usageByItemId[mapKey] ?? 0;
+            return (
+              <div key={item.id} className="meta-row">
+                <input
+                  className="form-control"
+                  value={editDrafts[mapKey] ?? item.name}
+                  onChange={(event) =>
+                    setEditDrafts((previous) => ({
+                      ...previous,
+                      [mapKey]: event.target.value
+                    }))
+                  }
+                />
+                <button
+                  type="button"
+                  className="btn btn-outline-primary btn-sm"
+                  onClick={() => handleRename(listKey, item.id, item.name)}
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger btn-sm"
+                  disabled={usageCount > 0}
+                  onClick={() => handleDelete(listKey, item.id)}
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm meta-usage-btn ${usageCount > 0 ? "btn-warning" : "btn-secondary"}`}
+                  disabled
+                >
+                  Used: {usageCount}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <section className="row g-3">
-      <div className="col-12 col-xl-10">
+      <div className="col-12 col-xl-10 mx-auto">
         <div className="card border-0 shadow-sm mb-3">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -120,7 +205,7 @@ export function MetaPage() {
               </Link>
             </div>
             <p className="text-secondary mb-0 mt-2">
-              Manage list items used by Workouts, Homework Children, Chores, and Substances.
+              Manage list items used by Workouts, Homework Subjects and Students, Chores, and Substances.
             </p>
           </div>
         </div>
@@ -206,83 +291,126 @@ export function MetaPage() {
           </div>
         </div>
 
-        <div className="row g-3">
-          {metaSections.map((listKey) => (
-            <div key={listKey} className="col-12 col-lg-6">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body">
-                  <h2 className="h5 mb-3">{metaLabels[listKey]}</h2>
-
-                  <form
-                    className="d-flex gap-2 mb-3"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      handleAdd(listKey);
-                    }}
-                  >
-                    <input
-                      className="form-control"
-                      placeholder={`Add ${singularLabels[listKey]}...`}
-                      value={addDrafts[listKey]}
-                      onChange={(event) =>
-                        setAddDrafts((previous) => ({ ...previous, [listKey]: event.target.value }))
-                      }
-                    />
-                    <button type="submit" className="btn btn-primary">
-                      Add
-                    </button>
-                  </form>
-
-                  {data.meta[listKey].length === 0 ? (
-                    <p className="text-secondary mb-0">No items yet.</p>
-                  ) : (
-                    <div className="d-flex flex-column gap-2">
-                      {data.meta[listKey].map((item) => {
-                        const mapKey = `${listKey}:${item.id}`;
-                        const usageCount = usageByItemId[mapKey] ?? 0;
-                        return (
-                          <div key={item.id} className="meta-row">
-                            <input
-                              className="form-control"
-                              value={editDrafts[mapKey] ?? item.name}
-                              onChange={(event) =>
-                                setEditDrafts((previous) => ({
-                                  ...previous,
-                                  [mapKey]: event.target.value
-                                }))
-                              }
-                            />
-                            <button
-                              type="button"
-                              className="btn btn-outline-primary btn-sm"
-                              onClick={() => handleRename(listKey, item.id, item.name)}
-                            >
-                              Save
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-outline-danger btn-sm"
-                              disabled={usageCount > 0}
-                              onClick={() => handleDelete(listKey, item.id)}
-                            >
-                              Delete
-                            </button>
-                            <button
-                              type="button"
-                              className={`btn btn-sm meta-usage-btn ${usageCount > 0 ? "btn-warning" : "btn-secondary"}`}
-                              disabled
-                            >
-                              Used: {usageCount}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+        <div className="row g-3 mb-3">
+          <div className="col-12 col-lg-6 col-xl-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <h2 className="h5 mb-3">Carb Limit Per Day</h2>
+                <input
+                  id="meta-carb-limit-per-day"
+                  className="form-control shared-date-input"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.1"
+                  value={data.settings.carbLimitPerDay ?? ""}
+                  onChange={(event) => {
+                    updateSettings({
+                      carbLimitPerDay: parseDecimal(event.target.value)
+                    });
+                  }}
+                />
               </div>
             </div>
-          ))}
+          </div>
+
+          <div className="col-12 col-lg-6 col-xl-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <h2 className="h5 mb-3">Calorie Limit Per Day</h2>
+                <input
+                  id="meta-calorie-limit-per-day"
+                  className="form-control shared-date-input"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.1"
+                  value={data.settings.calorieLimitPerDay ?? ""}
+                  onChange={(event) => {
+                    updateSettings({
+                      calorieLimitPerDay: parseDecimal(event.target.value)
+                    });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="col-12 col-lg-6 col-xl-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <h2 className="h5 mb-3">Daily Steps Goal</h2>
+                <input
+                  id="meta-daily-steps-goal"
+                  className="form-control shared-date-input"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.1"
+                  value={data.settings.dailyStepsGoal ?? ""}
+                  onChange={(event) => {
+                    updateSettings({
+                      dailyStepsGoal: parseDecimal(event.target.value)
+                    });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="col-12 col-lg-6 col-xl-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <h2 className="h5 mb-3">Desired Rest (hours)</h2>
+                <input
+                  id="meta-desired-sleep-hours"
+                  className="form-control shared-date-input"
+                  type="number"
+                  inputMode="decimal"
+                  min="3"
+                  max="12"
+                  step="0.1"
+                  value={data.settings.desiredSleepHours ?? ""}
+                  onChange={(event) => {
+                    updateSettings({
+                      desiredSleepHours: parseDecimalInRange(event.target.value, 3, 12)
+                    });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="row g-3">
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">{renderMetaListEditor("workouts")}</div>
+            </div>
+          </div>
+
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <h2 className="h5 mb-3">Homework</h2>
+                {renderMetaListEditor("subjects")}
+                <hr className="entry-form-divider my-2" />
+                {renderMetaListEditor("children")}
+              </div>
+            </div>
+          </div>
+
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">{renderMetaListEditor("chores")}</div>
+            </div>
+          </div>
+
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">{renderMetaListEditor("substances")}</div>
+            </div>
+          </div>
         </div>
 
         {notice ? (

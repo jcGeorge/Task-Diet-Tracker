@@ -1,5 +1,10 @@
 import { useMemo } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
+import { CaloriesStackedChart } from "../components/CaloriesStackedChart";
+import { ChoresHistogram } from "../components/ChoresHistogram";
+import { ThresholdBarChart } from "../components/ThresholdBarChart";
+import { SubstancesHistogram } from "../components/SubstancesHistogram";
+import { WorkoutsCompositionChart } from "../components/WorkoutsCompositionChart";
 import { WeightGraph } from "../components/WeightGraph";
 import { useAppData } from "../context/AppDataContext";
 import { compareDisplayDatesDesc } from "../lib/date";
@@ -25,6 +30,10 @@ export function TrackerPage() {
   const workoutNames = useMemo(
     () => Object.fromEntries(data.meta.workouts.map((item) => [item.id, item.name])),
     [data.meta.workouts]
+  );
+  const subjectNames = useMemo(
+    () => Object.fromEntries(data.meta.subjects.map((item) => [item.id, item.name])),
+    [data.meta.subjects]
   );
   const childNames = useMemo(
     () => Object.fromEntries(data.meta.children.map((item) => [item.id, item.name])),
@@ -52,6 +61,89 @@ export function TrackerPage() {
         </div>
       ) : null}
 
+      {trackerKey === "substances" ? (
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <h2 className="h5 mb-3">Substances Histogram</h2>
+              <SubstancesHistogram entries={data.trackers.substances} substances={data.meta.substances} />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {trackerKey === "cleaning" ? (
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <h2 className="h5 mb-3">Chores Chart</h2>
+              <ChoresHistogram entries={data.trackers.cleaning} chores={data.meta.chores} />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {trackerKey === "steps" ? (
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <ThresholdBarChart
+                title="Steps Chart"
+                entries={data.trackers.steps.map((entry) => ({ id: entry.id, date: entry.date, value: entry.steps }))}
+                threshold={data.settings.dailyStepsGoal}
+                thresholdLabel="Daily Steps Goal"
+                valueLabel="Steps"
+                formatWithCommas
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {trackerKey === "carbs" ? (
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <ThresholdBarChart
+                title="Carbs Chart"
+                entries={data.trackers.carbs.map((entry) => ({ id: entry.id, date: entry.date, value: entry.carbs }))}
+                threshold={data.settings.carbLimitPerDay}
+                thresholdLabel="Carb Limit Per Day"
+                valueLabel="Carbs"
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {trackerKey === "calories" ? (
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <CaloriesStackedChart
+                entries={data.trackers.calories.map((entry) => ({
+                  id: entry.id,
+                  date: entry.date,
+                  calories: entry.calories,
+                  notes: entry.notes
+                }))}
+                threshold={data.settings.calorieLimitPerDay}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {trackerKey === "workouts" ? (
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <WorkoutsCompositionChart entries={data.trackers.workouts} workouts={data.meta.workouts} />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="col-12">
         <div className="card border-0 shadow-sm">
           <div className="card-body">
@@ -74,12 +166,18 @@ export function TrackerPage() {
                   const choreIds = Array.isArray(item.choreIds) ? (item.choreIds as string[]) : [];
                   const substanceIds = Array.isArray(item.substanceIds) ? (item.substanceIds as string[]) : [];
                   const notes = typeof item.notes === "string" ? item.notes : "";
+                  const subjectId = typeof item.subjectId === "string" ? item.subjectId : "";
                   const childId = typeof item.childId === "string" ? item.childId : "";
                   const minutes = typeof item.minutes === "number" ? item.minutes : 0;
                   const weightLbs = typeof item.weightLbs === "number" ? item.weightLbs : 0;
                   const hours = typeof item.hours === "number" ? item.hours : 0;
                   const carbs = typeof item.carbs === "number" ? item.carbs : 0;
+                  const calories = typeof item.calories === "number" ? item.calories : 0;
                   const steps = typeof item.steps === "number" ? item.steps : 0;
+                  const sleepTime = typeof item.sleepTime === "string" ? item.sleepTime : "";
+                  const wakeTime = typeof item.wakeTime === "string" ? item.wakeTime : "";
+                  const moodStart = typeof item.moodStart === "number" ? item.moodStart : 0;
+                  const moodEnd = typeof item.moodEnd === "number" ? item.moodEnd : 0;
 
                   const workoutSummary =
                     activities.length > 0
@@ -106,14 +204,18 @@ export function TrackerPage() {
                     primarySummary = `Hours: ${hours}`;
                   } else if (trackerKey === "carbs") {
                     primarySummary = `Carbs (g): ${carbs}`;
+                  } else if (trackerKey === "calories") {
+                    primarySummary = `Calories: ${calories}`;
                   } else if (trackerKey === "steps") {
                     primarySummary = `Steps: ${steps}`;
                   } else if (trackerKey === "sleep") {
-                    primarySummary = "Sleep recorded";
+                    primarySummary = `Sleep: ${sleepTime || "(unset)"} - ${wakeTime || "(unset)"}`;
+                  } else if (trackerKey === "mood") {
+                    primarySummary = `Mood Start: ${moodStart} | Mood End: ${moodEnd}`;
                   } else if (trackerKey === "workouts") {
                     primarySummary = workoutSummary;
                   } else if (trackerKey === "homework") {
-                    primarySummary = `Child: ${(childNames[childId] as string | undefined) ?? "Unknown child"} | Minutes: ${minutes}`;
+                    primarySummary = `Subject: ${(subjectNames[subjectId] as string | undefined) ?? "Unknown subject"} | Student: ${(childNames[childId] as string | undefined) ?? "Unknown student"} | Minutes: ${minutes}`;
                   } else if (trackerKey === "cleaning") {
                     primarySummary = `Chores: ${choresSummary}`;
                   } else if (trackerKey === "substances") {
@@ -136,7 +238,12 @@ export function TrackerPage() {
                           </button>
                         </div>
 
-                        {(trackerKey === "homework" || trackerKey === "cleaning" || trackerKey === "substances") && notes ? (
+                        {(trackerKey === "homework" ||
+                          trackerKey === "cleaning" ||
+                          trackerKey === "substances" ||
+                          trackerKey === "calories" ||
+                          trackerKey === "mood") &&
+                        notes ? (
                           <div className="small text-secondary">Notes: {notes}</div>
                         ) : null}
                       </div>
