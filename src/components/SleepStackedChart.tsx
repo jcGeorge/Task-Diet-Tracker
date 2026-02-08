@@ -253,16 +253,16 @@ export function SleepStackedChart({ entries }: SleepStackedChartProps) {
               height={TOOLTIP_HEIGHT}
               rx={6}
               ry={6}
-              fill="rgba(23, 28, 34, 0.92)"
-              stroke="rgba(255,255,255,0.2)"
+              fill="var(--graph-tooltip-bg)"
+              stroke="var(--graph-tooltip-border)"
             />
-            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="#ffffff">
+            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="var(--graph-tooltip-text)">
               {hoveredSegment.date}
             </text>
-            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="#fff2bf">
+            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="var(--graph-tooltip-accent-1)">
               {`Sleep Start: ${hoveredSegment.sleepTime} | Sleep End: ${hoveredSegment.wakeTime}`}
             </text>
-            <text x={tooltip.x + 10} y={tooltip.y + 56} fontSize="12" fill="#d8f5ff">
+            <text x={tooltip.x + 10} y={tooltip.y + 56} fontSize="12" fill="var(--graph-tooltip-accent-2)">
               {`Hours Slept: ${formatHours(hoveredSegment.hoursSlept)}`}
             </text>
           </g>
@@ -271,3 +271,4 @@ export function SleepStackedChart({ entries }: SleepStackedChartProps) {
     </div>
   );
 }
+

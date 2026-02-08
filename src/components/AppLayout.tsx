@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAppData } from "../context/AppDataContext";
 import { trackerKeys, trackerLabels, type TrackerKey } from "../types";
@@ -27,7 +28,7 @@ const dropdownTrackerKeys = [...trackerKeys].sort((left, right) =>
 export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { data, loading, error, clearError, updateSettings } = useAppData();
+  const { data, hiddenSections, loading, error, clearError, updateSettings } = useAppData();
   const pathname = location.pathname;
   const activeTracker = getTrackerFromPath(location.pathname);
   const activeInput = getInputFromPath(location.pathname);
@@ -38,17 +39,26 @@ export function AppLayout() {
   const isSettingsRoute = pathname === "/settings";
   const isMetadataRoute = pathname === "/settings/meta";
   const activeRouteKey = isTrackerRoute ? activeTracker : isInputRoute ? activeInput : "";
-  const showRouteStepper = (isTrackerRoute || isInputRoute) && isTrackerKey(activeRouteKey);
+  const hiddenSectionSet = useMemo(() => new Set(hiddenSections), [hiddenSections]);
+  const visibleDropdownTrackerKeys = useMemo(
+    () => dropdownTrackerKeys.filter((trackerKey) => !hiddenSectionSet.has(trackerKey)),
+    [hiddenSectionSet]
+  );
+  const showRouteStepper = (isTrackerRoute || isInputRoute) && isTrackerKey(activeRouteKey) && visibleDropdownTrackerKeys.length > 0;
 
   function stepRoute(direction: -1 | 1) {
     if (!showRouteStepper) {
       return;
     }
 
-    const currentIndex = dropdownTrackerKeys.indexOf(activeRouteKey);
-    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
-    const nextIndex = (safeIndex + direction + dropdownTrackerKeys.length) % dropdownTrackerKeys.length;
-    const nextTrackerKey = dropdownTrackerKeys[nextIndex];
+    const currentIndex = visibleDropdownTrackerKeys.indexOf(activeRouteKey);
+    const nextIndex =
+      currentIndex === -1
+        ? direction === 1
+          ? 0
+          : visibleDropdownTrackerKeys.length - 1
+        : (currentIndex + direction + visibleDropdownTrackerKeys.length) % visibleDropdownTrackerKeys.length;
+    const nextTrackerKey = visibleDropdownTrackerKeys[nextIndex];
     const basePath = isTrackerRoute ? "/tracker/" : "/input/";
     navigate(`${basePath}${nextTrackerKey}`);
   }
@@ -111,7 +121,7 @@ export function AppLayout() {
               <select
                 id="tracker-nav"
                 className={`form-select tracker-select ${isTrackerRoute ? "tracker-select-active" : ""}`}
-                value={isTrackerKey(activeTracker) ? activeTracker : ""}
+                value={isTrackerKey(activeTracker) && !hiddenSectionSet.has(activeTracker) ? activeTracker : ""}
                 onChange={(event) => {
                   if (event.target.value) {
                     navigate(`/tracker/${event.target.value}`);
@@ -119,7 +129,7 @@ export function AppLayout() {
                 }}
               >
                 <option value="">Trackers</option>
-                {dropdownTrackerKeys.map((trackerKey) => (
+                {visibleDropdownTrackerKeys.map((trackerKey) => (
                   <option key={trackerKey} value={trackerKey}>
                     {trackerLabels[trackerKey]}
                   </option>
@@ -132,7 +142,7 @@ export function AppLayout() {
               <select
                 id="input-nav"
                 className={`form-select tracker-select ${isInputRoute ? "tracker-select-active" : ""}`}
-                value={isTrackerKey(activeInput) ? activeInput : ""}
+                value={isTrackerKey(activeInput) && !hiddenSectionSet.has(activeInput) ? activeInput : ""}
                 onChange={(event) => {
                   if (event.target.value) {
                     navigate(`/input/${event.target.value}`);
@@ -140,7 +150,7 @@ export function AppLayout() {
                 }}
               >
                 <option value="">Inputs</option>
-                {dropdownTrackerKeys.map((trackerKey) => (
+                {visibleDropdownTrackerKeys.map((trackerKey) => (
                   <option key={trackerKey} value={trackerKey}>
                     {trackerLabels[trackerKey]}
                   </option>

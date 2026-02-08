@@ -1,54 +1,42 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { displayDateToIso } from "../lib/date";
-import type { MetaItem } from "../types";
 
-interface HomeworkStackedEntry {
+interface CarbsStackedEntry {
   id: string;
   date: string;
-  minutes: number;
+  carbs: number;
   notes: string;
-  studentId: string;
-  subjectName: string;
 }
 
-interface HomeworkStackedChartProps {
-  entries: HomeworkStackedEntry[];
-  students: MetaItem[];
+interface CarbsStackedChartProps {
+  entries: CarbsStackedEntry[];
+  threshold: number | null;
 }
 
 interface DailySegment {
   id: string;
-  minutes: number;
+  carbs: number;
   notes: string;
-  subjectName: string;
 }
 
 interface DailyGroup {
   date: string;
   isoDate: string;
-  totalMinutes: number;
+  totalCarbs: number;
   segments: DailySegment[];
 }
 
-const STORAGE_KEY = "task-diet-tracker.homework-chart-student-id";
 const CHART_WIDTH = 920;
 const CHART_HEIGHT = 360;
 const PADDING = { top: 20, right: 24, bottom: 68, left: 56 };
-const TOOLTIP_WIDTH = 320;
+const TOOLTIP_WIDTH = 270;
 const BASE_TOOLTIP_HEIGHT = 56;
-const SEGMENT_COLORS = ["#198754", "#0d6efd", "#20c997", "#6f42c1", "#4dabf7", "#5c7cfa"];
+const ABOVE_LIMIT_COLORS = ["#dc3545", "#fd7e14", "#ffd24a"];
+const AT_OR_BELOW_LIMIT_COLORS = ["#198754", "#0d6efd", "#9a66d8"];
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
-}
-
-function readSavedStudentId(): string {
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) ?? "";
-  } catch {
-    return "";
-  }
 }
 
 function buildStep(maxValue: number): number {
@@ -82,7 +70,7 @@ function formatNumber(value: number): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
-function buildDailyGroups(entries: HomeworkStackedEntry[]): DailyGroup[] {
+function buildDailyGroups(entries: CarbsStackedEntry[]): DailyGroup[] {
   const groups = new Map<string, DailyGroup>();
 
   for (let index = entries.length - 1; index >= 0; index -= 1) {
@@ -97,64 +85,34 @@ function buildDailyGroups(entries: HomeworkStackedEntry[]): DailyGroup[] {
       groups.set(isoDate, {
         date: entry.date,
         isoDate,
-        totalMinutes: entry.minutes,
-        segments: [{ id: entry.id, minutes: entry.minutes, notes: entry.notes, subjectName: entry.subjectName }]
+        totalCarbs: entry.carbs,
+        segments: [{ id: entry.id, carbs: entry.carbs, notes: entry.notes }]
       });
       continue;
     }
 
-    existing.totalMinutes += entry.minutes;
-    existing.segments.push({ id: entry.id, minutes: entry.minutes, notes: entry.notes, subjectName: entry.subjectName });
+    existing.totalCarbs += entry.carbs;
+    existing.segments.push({ id: entry.id, carbs: entry.carbs, notes: entry.notes });
   }
 
   return [...groups.values()].sort((left, right) => left.isoDate.localeCompare(right.isoDate));
 }
 
-export function HomeworkStackedChart({ entries, students }: HomeworkStackedChartProps) {
-  const [selectedStudentId, setSelectedStudentId] = useState<string>(() => readSavedStudentId());
+export function CarbsStackedChart({ entries, threshold }: CarbsStackedChartProps) {
   const [hoveredSegment, setHoveredSegment] = useState<{
     x: number;
     y: number;
     date: string;
-    minutes: number;
+    carbs: number;
     notes: string;
-    subjectName: string;
   } | null>(null);
 
-  useEffect(() => {
-    if (students.length === 0) {
-      return;
-    }
+  const dailyGroups = useMemo(() => buildDailyGroups(entries), [entries]);
 
-    if (selectedStudentId && students.some((student) => student.id === selectedStudentId)) {
-      return;
-    }
-
-    setSelectedStudentId(students[0].id);
-  }, [students, selectedStudentId]);
-
-  useEffect(() => {
-    if (!selectedStudentId) {
-      return;
-    }
-
-    try {
-      window.localStorage.setItem(STORAGE_KEY, selectedStudentId);
-    } catch {
-      // Ignore localStorage failures.
-    }
-  }, [selectedStudentId]);
-
-  const filteredEntries = useMemo(
-    () => entries.filter((entry) => entry.studentId === selectedStudentId),
-    [entries, selectedStudentId]
-  );
-  const dailyGroups = useMemo(() => buildDailyGroups(filteredEntries), [filteredEntries]);
-
-  if (students.length === 0) {
+  if (threshold === null) {
     return (
       <div className="mb-0">
-        <p className="text-secondary mb-2">Add students in Metadata to render this chart.</p>
+        <p className="text-secondary mb-2">Carb Limit Per Day is required to render this chart.</p>
         <Link className="btn btn-primary btn-sm" to="/settings/meta">
           Open Metadata
         </Link>
@@ -162,37 +120,15 @@ export function HomeworkStackedChart({ entries, students }: HomeworkStackedChart
     );
   }
 
-  const selectedStudentName = students.find((student) => student.id === selectedStudentId)?.name ?? "Unknown student";
-
   if (dailyGroups.length === 0) {
     return (
       <div className="mb-0">
-        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-          <h2 className="h5 mb-0">Homework Chart</h2>
-          <div className="d-flex align-items-center gap-2">
-            <label htmlFor="homework-chart-student" className="form-label fw-semibold mb-0">
-              Student
-            </label>
-            <select
-              id="homework-chart-student"
-              className="form-select homework-chart-student-select"
-              value={selectedStudentId}
-              onChange={(event) => setSelectedStudentId(event.target.value)}
-            >
-              {students.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <p className="text-secondary mb-0">No homework entries yet for {selectedStudentName}.</p>
+        <p className="text-secondary mb-0">No entries yet.</p>
       </div>
     );
   }
 
-  const maxValue = Math.max(...dailyGroups.map((group) => group.totalMinutes), 1);
+  const maxValue = Math.max(threshold, ...dailyGroups.map((group) => group.totalCarbs), 1);
   const step = buildStep(maxValue);
   const yMax = Math.ceil(maxValue / step) * step;
   const yTicks = Array.from({ length: Math.floor(yMax / step) + 1 }, (_, index) => index * step);
@@ -201,8 +137,9 @@ export function HomeworkStackedChart({ entries, students }: HomeworkStackedChart
   const plotHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom;
   const slotWidth = plotWidth / Math.max(dailyGroups.length, 1);
   const barWidth = clamp(slotWidth * 0.62, 16, 72);
+  const thresholdY = PADDING.top + plotHeight - (threshold / yMax) * plotHeight;
 
-  const tooltipLineCount = hoveredSegment ? (hoveredSegment.notes ? 4 : 3) : 2;
+  const tooltipLineCount = hoveredSegment?.notes ? 3 : 2;
   const tooltipHeight = BASE_TOOLTIP_HEIGHT + (tooltipLineCount - 2) * 18;
   const tooltip = hoveredSegment
     ? {
@@ -213,38 +150,18 @@ export function HomeworkStackedChart({ entries, students }: HomeworkStackedChart
 
   return (
     <div className="threshold-chart-wrap">
-      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <h2 className="h5 mb-0">Homework Chart</h2>
-        <div className="d-flex align-items-center gap-2">
-          <label htmlFor="homework-chart-student" className="form-label fw-semibold mb-0">
-            Student
-          </label>
-          <select
-            id="homework-chart-student"
-            className="form-select homework-chart-student-select"
-            value={selectedStudentId}
-            onChange={(event) => setSelectedStudentId(event.target.value)}
-          >
-            {students.map((student) => (
-              <option key={student.id} value={student.id}>
-                {student.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
+      <h2 className="h5 mb-3">Carbs Chart</h2>
       <svg
         className="threshold-chart-svg"
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label={`Homework stacked bar chart for ${selectedStudentName}`}
+        aria-label="Carbs stacked bar chart"
       >
         {yTicks.map((tick) => {
           const y = PADDING.top + plotHeight - (tick / yMax) * plotHeight;
           return (
-            <g key={`homework-tick-${tick}`}>
+            <g key={`tick-${tick}`}>
               <line x1={PADDING.left} y1={y} x2={CHART_WIDTH - PADDING.right} y2={y} stroke="rgba(127,127,127,0.24)" />
               <text x={PADDING.left - 8} y={y + 4} textAnchor="end" fontSize="12" fill="currentColor">
                 {formatNumber(tick)}
@@ -270,19 +187,30 @@ export function HomeworkStackedChart({ entries, students }: HomeworkStackedChart
           strokeOpacity="0.65"
         />
 
+        <line
+          x1={PADDING.left}
+          y1={thresholdY}
+          x2={CHART_WIDTH - PADDING.right}
+          y2={thresholdY}
+          stroke="#dc3545"
+          strokeWidth={2}
+          strokeDasharray="6 4"
+        />
+
         {dailyGroups.map((group, index) => {
           const x = PADDING.left + index * slotWidth + (slotWidth - barWidth) / 2;
-          let runningMinutes = 0;
+          let runningCarbs = 0;
+          const segmentPalette = group.totalCarbs > threshold ? ABOVE_LIMIT_COLORS : AT_OR_BELOW_LIMIT_COLORS;
 
           return (
             <g key={group.isoDate}>
               {group.segments.map((segment, segmentIndex) => {
-                const startMinutes = runningMinutes;
-                runningMinutes += segment.minutes;
-                const yTop = PADDING.top + plotHeight - (runningMinutes / yMax) * plotHeight;
-                const yBottom = PADDING.top + plotHeight - (startMinutes / yMax) * plotHeight;
+                const startCarbs = runningCarbs;
+                runningCarbs += segment.carbs;
+                const yTop = PADDING.top + plotHeight - (runningCarbs / yMax) * plotHeight;
+                const yBottom = PADDING.top + plotHeight - (startCarbs / yMax) * plotHeight;
                 const height = Math.max(yBottom - yTop, 1);
-                const color = SEGMENT_COLORS[segmentIndex % SEGMENT_COLORS.length];
+                const color = segmentPalette[segmentIndex % segmentPalette.length];
 
                 return (
                   <rect
@@ -298,9 +226,8 @@ export function HomeworkStackedChart({ entries, students }: HomeworkStackedChart
                         x: x + barWidth / 2,
                         y: yTop,
                         date: group.date,
-                        minutes: segment.minutes,
-                        notes: segment.notes,
-                        subjectName: segment.subjectName
+                        carbs: segment.carbs,
+                        notes: segment.notes
                       })
                     }
                     onMouseLeave={() => setHoveredSegment(null)}
@@ -331,13 +258,10 @@ export function HomeworkStackedChart({ entries, students }: HomeworkStackedChart
               {hoveredSegment.date}
             </text>
             <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="var(--graph-tooltip-accent-1)">
-              {`Minutes: ${formatNumber(hoveredSegment.minutes)}`}
-            </text>
-            <text x={tooltip.x + 10} y={tooltip.y + 56} fontSize="12" fill="var(--graph-tooltip-accent-2)">
-              {`Subject: ${hoveredSegment.subjectName || "(unset)"}`}
+              {`Carbs: ${formatNumber(hoveredSegment.carbs)}`}
             </text>
             {hoveredSegment.notes ? (
-              <text x={tooltip.x + 10} y={tooltip.y + 74} fontSize="12" fill="var(--graph-tooltip-text)">
+              <text x={tooltip.x + 10} y={tooltip.y + 56} fontSize="12" fill="var(--graph-tooltip-text)">
                 {`Notes: ${hoveredSegment.notes}`}
               </text>
             ) : null}

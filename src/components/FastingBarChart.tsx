@@ -145,13 +145,13 @@ export function FastingBarChart({ entries }: FastingBarChartProps) {
               height={TOOLTIP_HEIGHT}
               rx={6}
               ry={6}
-              fill="rgba(23, 28, 34, 0.92)"
-              stroke="rgba(255,255,255,0.2)"
+              fill="var(--graph-tooltip-bg)"
+              stroke="var(--graph-tooltip-border)"
             />
-            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="#ffffff">
+            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="var(--graph-tooltip-text)">
               {hoveredBar.date}
             </text>
-            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="#d7f7e5">
+            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="var(--graph-tooltip-accent-2)">
               {`Hours: ${formatHours(hoveredBar.hours)}`}
             </text>
           </g>
@@ -160,3 +160,4 @@ export function FastingBarChart({ entries }: FastingBarChartProps) {
     </div>
   );
 }
+

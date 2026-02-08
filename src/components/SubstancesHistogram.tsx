@@ -170,11 +170,11 @@ export function SubstancesHistogram({ entries, substances }: SubstancesHistogram
 
         {hoveredBar && tooltip ? (
           <g pointerEvents="none">
-            <rect x={tooltip.x} y={tooltip.y} width={182} height={52} rx={6} ry={6} fill="rgba(23, 28, 34, 0.92)" stroke="rgba(255,255,255,0.2)" />
-            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="#ffffff">
+            <rect x={tooltip.x} y={tooltip.y} width={182} height={52} rx={6} ry={6} fill="var(--graph-tooltip-bg)" stroke="var(--graph-tooltip-border)" />
+            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="var(--graph-tooltip-text)">
               {hoveredBar.name}
             </text>
-            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="#ffe9b0">
+            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="var(--graph-tooltip-accent-1)">
               {`Uses: ${hoveredBar.count}`}
             </text>
           </g>
@@ -183,3 +183,4 @@ export function SubstancesHistogram({ entries, substances }: SubstancesHistogram
     </div>
   );
 }
+

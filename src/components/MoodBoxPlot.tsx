@@ -194,17 +194,17 @@ export function MoodBoxPlot({ entries }: MoodBoxPlotProps) {
               height={tooltipHeight}
               rx={6}
               ry={6}
-              fill="rgba(23, 28, 34, 0.92)"
-              stroke="rgba(255,255,255,0.2)"
+              fill="var(--graph-tooltip-bg)"
+              stroke="var(--graph-tooltip-border)"
             />
-            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="#ffffff">
+            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="var(--graph-tooltip-text)">
               {hoveredPoint.date}
             </text>
-            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="#d7f7e5">
+            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="var(--graph-tooltip-accent-2)">
               {`Mood Start: ${formatMood(hoveredPoint.moodStart)} | Mood End: ${formatMood(hoveredPoint.moodEnd)}`}
             </text>
             {hoveredPoint.notes ? (
-              <text x={tooltip.x + 10} y={tooltip.y + 56} fontSize="12" fill="#ffffff">
+              <text x={tooltip.x + 10} y={tooltip.y + 56} fontSize="12" fill="var(--graph-tooltip-text)">
                 {`Notes: ${hoveredPoint.notes}`}
               </text>
             ) : null}
@@ -214,3 +214,4 @@ export function MoodBoxPlot({ entries }: MoodBoxPlotProps) {
     </div>
   );
 }
+

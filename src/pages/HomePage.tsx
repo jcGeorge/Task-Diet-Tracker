@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useAppData } from "../context/AppDataContext";
 import { trackerLabels, type TrackerKey } from "../types";
@@ -18,7 +19,12 @@ const hubOrder: TrackerKey[] = [
 ];
 
 export function HomePage() {
-  const { data } = useAppData();
+  const { data, hiddenSections } = useAppData();
+  const hiddenSectionSet = useMemo(() => new Set(hiddenSections), [hiddenSections]);
+  const visibleHubOrder = useMemo(
+    () => hubOrder.filter((trackerKey) => !hiddenSectionSet.has(trackerKey)),
+    [hiddenSectionSet]
+  );
 
   return (
     <section>
@@ -31,37 +37,49 @@ export function HomePage() {
 
       <h2 className="h5 mb-3">Trackers</h2>
       <div className="row g-3 mb-4">
-        {hubOrder.map((trackerKey) => (
-          <div key={trackerKey} className="col-12 col-md-6 col-lg-4 col-xl-3">
-            <div className="card border-0 shadow-sm h-100 tracker-card">
-              <div className="card-body d-flex flex-column hub-card-body">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h2 className="h5 mb-0">{trackerLabels[trackerKey]}</h2>
-                  <span className="text-secondary fs-6">Entries: {data.trackers[trackerKey].length}</span>
+        {visibleHubOrder.length === 0 ? (
+          <div className="col-12">
+            <p className="text-secondary mb-0">No sections are visible. Enable sections in Settings.</p>
+          </div>
+        ) : (
+          visibleHubOrder.map((trackerKey) => (
+            <div key={trackerKey} className="col-12 col-md-6 col-lg-4 col-xl-3">
+              <div className="card border-0 shadow-sm h-100 tracker-card">
+                <div className="card-body d-flex flex-column hub-card-body">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h2 className="h5 mb-0">{trackerLabels[trackerKey]}</h2>
+                    <span className="text-secondary fs-6">Entries: {data.trackers[trackerKey].length}</span>
+                  </div>
+                  <Link className="btn btn-primary mt-auto" to={`/tracker/${trackerKey}`}>
+                    Open Tracker
+                  </Link>
                 </div>
-                <Link className="btn btn-primary mt-auto" to={`/tracker/${trackerKey}`}>
-                  Open Tracker
-                </Link>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       <h2 className="h5 mb-3">Inputs</h2>
       <div className="row g-3">
-        {hubOrder.map((trackerKey) => (
-          <div key={`input-${trackerKey}`} className="col-12 col-md-6 col-lg-4 col-xl-3">
-            <div className="card border-0 shadow-sm h-100 tracker-card">
-              <div className="card-body d-flex flex-column hub-card-body">
-                <h2 className="h5 mb-3">{trackerLabels[trackerKey]}</h2>
-                <Link className="btn btn-success mt-auto" to={`/input/${trackerKey}`}>
-                  Open Input
-                </Link>
+        {visibleHubOrder.length === 0 ? (
+          <div className="col-12">
+            <p className="text-secondary mb-0">No sections are visible. Enable sections in Settings.</p>
+          </div>
+        ) : (
+          visibleHubOrder.map((trackerKey) => (
+            <div key={`input-${trackerKey}`} className="col-12 col-md-6 col-lg-4 col-xl-3">
+              <div className="card border-0 shadow-sm h-100 tracker-card">
+                <div className="card-body d-flex flex-column hub-card-body">
+                  <h2 className="h5 mb-3">{trackerLabels[trackerKey]}</h2>
+                  <Link className="btn btn-success mt-auto" to={`/input/${trackerKey}`}>
+                    Open Input
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </section>
   );

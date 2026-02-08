@@ -2,10 +2,25 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAppData } from "../context/AppDataContext";
 import { displayDateToIso, isDisplayDate, isoToDisplayDate, todayDisplayDate } from "../lib/date";
-import { trackerKeys, type AppData } from "../types";
+import { trackerKeys, trackerLabels, type AppData, type TrackerKey } from "../types";
 
 type Notice = { tone: "success" | "danger"; message: string } | null;
 type DeleteModalKind = "all" | "before" | null;
+
+const sectionVisibilityOrder: TrackerKey[] = [
+  "weight",
+  "steps",
+  "carbs",
+  "calories",
+  "workouts",
+  "fasting",
+  "mood",
+  "sleep",
+  "cleaning",
+  "homework",
+  "substances",
+  "entertainment"
+];
 
 function countTrackerEntries(trackers: AppData["trackers"]): number {
   return trackerKeys.reduce((total, key) => total + trackers[key].length, 0);
@@ -60,8 +75,10 @@ export function SettingsPage() {
   const {
     data,
     chartDateRangePreferences,
+    hiddenSections,
     updateChartDateRangePreferences,
     updateSettings,
+    setSectionHidden,
     importFromJson,
     exportToJson,
     exportProvidedData,
@@ -232,6 +249,35 @@ export function SettingsPage() {
                     Dark
                   </button>
                 </div>
+              </div>
+
+              <div className="mb-4">
+                <h2 className="h6 text-uppercase text-secondary">Section Visibility</h2>
+                <div className="row g-2">
+                  {sectionVisibilityOrder.map((trackerKey) => {
+                    const isVisible = !hiddenSections.includes(trackerKey);
+                    return (
+                      <div key={trackerKey} className="col-12 col-sm-6 col-lg-4">
+                        <div className="form-check form-switch">
+                          <input
+                            id={`section-visible-${trackerKey}`}
+                            className="form-check-input"
+                            type="checkbox"
+                            role="switch"
+                            checked={isVisible}
+                            onChange={(event) => setSectionHidden(trackerKey, !event.target.checked)}
+                          />
+                          <label className="form-check-label" htmlFor={`section-visible-${trackerKey}`}>
+                            {trackerLabels[trackerKey]}
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="form-text mb-0 mt-2">
+                  Hidden sections are removed from Home, Tracker/Input dropdowns, and left/right navigation.
+                </p>
               </div>
 
               <div className="mb-4">

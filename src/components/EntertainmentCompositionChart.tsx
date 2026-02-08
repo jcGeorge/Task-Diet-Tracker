@@ -324,7 +324,7 @@ export function EntertainmentCompositionChart({ entries, entertainment, theme }:
           const isActive = hoveredItemId === slice.item.id;
           const isMuted = hoveredItemId !== null && !isActive;
           const fillOpacity = isMuted ? 0.36 : 0.96;
-          const stroke = isActive ? "rgba(255,255,255,0.88)" : "rgba(0,0,0,0.22)";
+          const stroke = isActive ? "var(--graph-slice-stroke-active)" : "var(--graph-slice-stroke)";
           const strokeWidth = isActive ? 3 : 1;
 
           if (chartStyle === "pie") {
@@ -392,16 +392,16 @@ export function EntertainmentCompositionChart({ entries, entertainment, theme }:
               height={TOOLTIP_HEIGHT}
               rx={6}
               ry={6}
-              fill="rgba(23, 28, 34, 0.92)"
-              stroke="rgba(255,255,255,0.2)"
+              fill="var(--graph-tooltip-bg)"
+              stroke="var(--graph-tooltip-border)"
             />
-            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="#ffffff">
+            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="var(--graph-tooltip-text)">
               {activeSlice.item.name}
             </text>
-            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="#fff2bf">
+            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="var(--graph-tooltip-accent-1)">
               {`Time: ${formatDuration(activeSlice.item.minutes)}`}
             </text>
-            <text x={tooltip.x + 10} y={tooltip.y + 56} fontSize="12" fill="#d8f5ff">
+            <text x={tooltip.x + 10} y={tooltip.y + 56} fontSize="12" fill="var(--graph-tooltip-accent-2)">
               {`Share: ${formatNumber(activeSlice.percentage)}%`}
             </text>
           </g>
@@ -428,3 +428,4 @@ export function EntertainmentCompositionChart({ entries, entertainment, theme }:
     </div>
   );
 }
+

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { CaloriesByDateList } from "../components/CaloriesByDateList";
+import { CarbsByDateList } from "../components/CarbsByDateList";
 import { SharedDateInput } from "../components/SharedDateInput";
 import { TimeSelector } from "../components/TimeSelector";
 import { useAppData } from "../context/AppDataContext";
@@ -32,6 +33,7 @@ export function InputPage() {
   const [fastingHours, setFastingHours] = useState("");
   const [stepsValue, setStepsValue] = useState("");
   const [carbsValue, setCarbsValue] = useState("");
+  const [carbsNotes, setCarbsNotes] = useState("");
   const [caloriesValue, setCaloriesValue] = useState("");
   const [caloriesNotes, setCaloriesNotes] = useState("");
   const [sleepTime, setSleepTime] = useState<TimeParts>(DEFAULT_SLEEP_TIME_PARTS);
@@ -191,6 +193,7 @@ export function InputPage() {
         break;
       case "carbs":
         setCarbsValue("");
+        setCarbsNotes("");
         break;
       case "calories":
         setCaloriesValue("");
@@ -210,7 +213,6 @@ export function InputPage() {
         break;
       case "homework":
         setHomeworkSubjectId("");
-        setHomeworkChildId("");
         setHomeworkMinutes("");
         setHomeworkNotes("");
         break;
@@ -277,7 +279,7 @@ export function InputPage() {
         showError("Carbs must be a number between 0 and 500.");
         return;
       }
-      addTrackerEntry("carbs", { date, carbs: parsed });
+      addTrackerEntry("carbs", { date, carbs: parsed, notes: carbsNotes.trim() });
       resetNonDateFields("carbs");
       showSuccess(`Carbs entry added for ${date}.`);
       return;
@@ -470,10 +472,20 @@ export function InputPage() {
         <div className="card border-0 shadow-sm">
           <form className="card-body" onSubmit={handleFormSubmit} onKeyDown={handleFormKeyDown}>
             <h1 className="h4 mb-2">{trackerLabels[trackerKey]} Entry</h1>
+            {trackerKey === "carbs" ? (
+              <p className="text-secondary mb-3">
+                Carbs aggregate multiple entries in the same day, so you can add data one meal at a time instead of having
+                to remember this throughout the day.
+              </p>
+            ) : null}
+            {trackerKey === "calories" ? (
+              <p className="text-secondary mb-3">
+                Calories aggregate multiple entries in the same day, so you can add data one meal at a time instead of
+                having to remember this throughout the day.
+              </p>
+            ) : null}
 
             <SharedDateInput id="entry-date" label="Date" value={date} onChange={setDate} required allowDayStepper />
-
-            {trackerKey === "calories" ? <CaloriesByDateList date={date} entries={data.trackers.calories} /> : null}
 
             {trackerKey === "weight" ? (
               <div className="mb-3">
@@ -530,21 +542,35 @@ export function InputPage() {
             ) : null}
 
             {trackerKey === "carbs" ? (
-              <div className="mb-3">
-                <label htmlFor="carbs-value" className="form-label fw-semibold">
-                  Carbs (grams)
-                </label>
-                <input
-                  id="carbs-value"
-                  type="number"
-                  className="form-control shared-date-input"
-                  min={0}
-                  max={500}
-                  step="any"
-                  value={carbsValue}
-                  onChange={(event) => setCarbsValue(event.target.value)}
-                />
-              </div>
+              <>
+                <div className="mb-3">
+                  <label htmlFor="carbs-value" className="form-label fw-semibold">
+                    Carbs (grams)
+                  </label>
+                  <input
+                    id="carbs-value"
+                    type="number"
+                    className="form-control shared-date-input"
+                    min={0}
+                    max={500}
+                    step="any"
+                    value={carbsValue}
+                    onChange={(event) => setCarbsValue(event.target.value)}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="carbs-notes" className="form-label fw-semibold">
+                    Notes
+                  </label>
+                  <input
+                    id="carbs-notes"
+                    className="form-control"
+                    type="text"
+                    value={carbsNotes}
+                    onChange={(event) => setCarbsNotes(event.target.value)}
+                  />
+                </div>
+              </>
             ) : null}
 
             {trackerKey === "calories" ? (
@@ -568,10 +594,10 @@ export function InputPage() {
                   <label htmlFor="calories-notes" className="form-label fw-semibold">
                     Notes
                   </label>
-                  <textarea
+                  <input
                     id="calories-notes"
                     className="form-control"
-                    rows={3}
+                    type="text"
                     value={caloriesNotes}
                     onChange={(event) => setCaloriesNotes(event.target.value)}
                   />
@@ -941,6 +967,10 @@ export function InputPage() {
                 )}
               </>
             ) : null}
+
+            {trackerKey === "carbs" ? <CarbsByDateList date={date} entries={data.trackers.carbs} /> : null}
+
+            {trackerKey === "calories" ? <CaloriesByDateList date={date} entries={data.trackers.calories} /> : null}
 
             <hr className="entry-form-divider" />
 

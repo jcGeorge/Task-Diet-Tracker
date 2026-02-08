@@ -24,6 +24,7 @@ import { trackerKeys } from "../types";
 interface AppDataContextValue {
   data: AppData;
   chartDateRangePreferences: ChartDateRangePreferences;
+  hiddenSections: TrackerKey[];
   loading: boolean;
   error: string | null;
   addTrackerEntry: <K extends TrackerKey>(trackerKey: K, entry: NewTrackerEntryByKey[K]) => void;
@@ -35,6 +36,7 @@ interface AppDataContextValue {
   renameMetaItem: (listKey: MetaListKey, itemId: string, name: string) => boolean;
   removeMetaItem: (listKey: MetaListKey, itemId: string) => { ok: boolean; reason?: string };
   updateChartDateRangePreferences: (next: Partial<ChartDateRangePreferences>) => void;
+  setSectionHidden: (trackerKey: TrackerKey, hidden: boolean) => void;
   importFromJson: () => Promise<boolean>;
   exportToJson: () => Promise<boolean>;
   exportProvidedData: (exportData: AppData) => Promise<boolean>;
@@ -43,6 +45,7 @@ interface AppDataContextValue {
 
 const AppDataContext = createContext<AppDataContextValue | undefined>(undefined);
 const CHART_DATE_RANGE_STORAGE_KEY = "task-diet-tracker.chart-date-range";
+const HIDDEN_SECTIONS_STORAGE_KEY = "task-diet-tracker.hidden-sections";
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function nextId(): string {
@@ -111,11 +114,39 @@ function readChartDateRangePreferences(): ChartDateRangePreferences {
   }
 }
 
+function sanitizeHiddenSections(value: unknown): TrackerKey[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const unique = new Set<TrackerKey>();
+  for (const item of value) {
+    if (typeof item === "string" && trackerKeys.includes(item as TrackerKey)) {
+      unique.add(item as TrackerKey);
+    }
+  }
+
+  return trackerKeys.filter((key) => unique.has(key));
+}
+
+function readHiddenSections(): TrackerKey[] {
+  try {
+    const raw = window.localStorage.getItem(HIDDEN_SECTIONS_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+    return sanitizeHiddenSections(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+}
+
 export function AppDataProvider({ children }: PropsWithChildren) {
   const [data, setData] = useState<AppData>(createDefaultData());
   const [chartDateRangePreferences, setChartDateRangePreferences] = useState<ChartDateRangePreferences>(() =>
     readChartDateRangePreferences()
   );
+  const [hiddenSections, setHiddenSections] = useState<TrackerKey[]>(() => readHiddenSections());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -173,6 +204,14 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       // Ignore localStorage write failures.
     }
   }, [chartDateRangePreferences]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(HIDDEN_SECTIONS_STORAGE_KEY, JSON.stringify(hiddenSections));
+    } catch {
+      // Ignore localStorage write failures.
+    }
+  }, [hiddenSections]);
 
   const addTrackerEntry = useCallback(<K extends TrackerKey>(trackerKey: K, entry: NewTrackerEntryByKey[K]) => {
     if (!isDisplayDate(entry.date)) {
@@ -442,6 +481,18 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     );
   }, []);
 
+  const setSectionHidden = useCallback((trackerKey: TrackerKey, hidden: boolean) => {
+    setHiddenSections((previous) => {
+      const nextHidden = new Set<TrackerKey>(previous);
+      if (hidden) {
+        nextHidden.add(trackerKey);
+      } else {
+        nextHidden.delete(trackerKey);
+      }
+      return trackerKeys.filter((key) => nextHidden.has(key));
+    });
+  }, []);
+
   const exportToJson = useCallback(async (): Promise<boolean> => {
     try {
       return await window.taskTrackerApi.exportData(data);
@@ -468,6 +519,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     () => ({
       data,
       chartDateRangePreferences,
+      hiddenSections,
       loading,
       error,
       addTrackerEntry,
@@ -479,6 +531,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       renameMetaItem,
       removeMetaItem,
       updateChartDateRangePreferences,
+      setSectionHidden,
       importFromJson,
       exportToJson,
       exportProvidedData,
@@ -487,6 +540,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     [
       data,
       chartDateRangePreferences,
+      hiddenSections,
       loading,
       error,
       addTrackerEntry,
@@ -498,6 +552,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       renameMetaItem,
       removeMetaItem,
       updateChartDateRangePreferences,
+      setSectionHidden,
       importFromJson,
       exportToJson,
       exportProvidedData,

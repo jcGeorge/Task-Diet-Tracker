@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { CaloriesStackedChart } from "../components/CaloriesStackedChart";
+import { CarbsStackedChart } from "../components/CarbsStackedChart";
 import { ChoresHistogram } from "../components/ChoresHistogram";
 import { EntertainmentCompositionChart } from "../components/EntertainmentCompositionChart";
 import { FastingBarChart } from "../components/FastingBarChart";
@@ -402,12 +403,14 @@ export function TrackerPage() {
         <div className="col-12">
           <div className="card border-0 shadow-sm">
             <div className="card-body">
-              <ThresholdBarChart
-                title="Carbs Chart"
-                entries={filteredChartTrackers.carbs.map((entry) => ({ id: entry.id, date: entry.date, value: entry.carbs }))}
+              <CarbsStackedChart
+                entries={filteredChartTrackers.carbs.map((entry) => ({
+                  id: entry.id,
+                  date: entry.date,
+                  carbs: entry.carbs,
+                  notes: entry.notes
+                }))}
                 threshold={data.settings.carbLimitPerDay}
-                thresholdLabel="Carb Limit Per Day"
-                valueLabel="Carbs"
               />
               {renderGraphDateControls()}
             </div>
@@ -641,12 +644,13 @@ export function TrackerPage() {
                             type="button"
                             onClick={() => removeTrackerEntry(trackerKey, entry.id)}
                           >
-                            Remove
+                            Delete
                           </button>
                         </div>
 
                         {(trackerKey === "homework" ||
                           trackerKey === "cleaning" ||
+                          trackerKey === "carbs" ||
                           trackerKey === "calories" ||
                           trackerKey === "mood") &&
                         notes ? (

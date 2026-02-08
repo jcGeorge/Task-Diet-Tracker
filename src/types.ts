@@ -40,6 +40,7 @@ export interface FastingEntry extends BaseTrackerEntry {
 
 export interface CarbsEntry extends BaseTrackerEntry {
   carbs: number;
+  notes: string;
 }
 
 export interface CaloriesEntry extends BaseTrackerEntry {

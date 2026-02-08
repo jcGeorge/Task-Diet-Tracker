@@ -12,6 +12,13 @@ html[data-bs-theme="light"] {
   --app-input-bg: #e3e9ee;
   --app-list-bg: #edf1f4;
   --app-border: #b7c1c9;
+  --graph-tooltip-bg: rgba(247, 250, 253, 0.97);
+  --graph-tooltip-border: rgba(44, 55, 64, 0.28);
+  --graph-tooltip-text: #1f2a32;
+  --graph-tooltip-accent-1: #7b5b00;
+  --graph-tooltip-accent-2: #0b566f;
+  --graph-slice-stroke-active: rgba(31, 42, 50, 0.7);
+  --graph-slice-stroke: rgba(31, 42, 50, 0.26);
 }
 
 html[data-bs-theme="dark"] {
@@ -28,6 +35,13 @@ html[data-bs-theme="dark"] {
   --app-input-bg: #313b45;
   --app-list-bg: #2d3640;
   --app-border: #46515d;
+  --graph-tooltip-bg: rgba(23, 28, 34, 0.92);
+  --graph-tooltip-border: rgba(255, 255, 255, 0.2);
+  --graph-tooltip-text: #ffffff;
+  --graph-tooltip-accent-1: #fff2bf;
+  --graph-tooltip-accent-2: #d8f5ff;
+  --graph-slice-stroke-active: rgba(255, 255, 255, 0.88);
+  --graph-slice-stroke: rgba(0, 0, 0, 0.22);
 }
 
 body {

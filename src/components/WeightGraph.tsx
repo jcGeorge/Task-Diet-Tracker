@@ -422,13 +422,13 @@ export function WeightGraph({ settings, entries, rangeStartIso, rangeEndIso }: W
               height={TOOLTIP_HEIGHT}
               rx={6}
               ry={6}
-              fill="rgba(23, 28, 34, 0.92)"
-              stroke="rgba(255,255,255,0.18)"
+              fill="var(--graph-tooltip-bg)"
+              stroke="var(--graph-tooltip-border)"
             />
-            <text x={tooltipPosition.x + 10} y={tooltipPosition.y + 20} fontSize="12" fill="#ffffff">
+            <text x={tooltipPosition.x + 10} y={tooltipPosition.y + 20} fontSize="12" fill="var(--graph-tooltip-text)">
               {formatTooltipDate(hoveredPoint.date)}
             </text>
-            <text x={tooltipPosition.x + 10} y={tooltipPosition.y + 38} fontSize="12" fill="#d7f7e5">
+            <text x={tooltipPosition.x + 10} y={tooltipPosition.y + 38} fontSize="12" fill="var(--graph-tooltip-accent-2)">
               {`Weight: ${formatWeight(hoveredPoint.weight)} lbs`}
             </text>
           </g>
@@ -464,3 +464,4 @@ export function WeightGraph({ settings, entries, rangeStartIso, rangeEndIso }: W
     </div>
   );
 }
+

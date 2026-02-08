@@ -169,13 +169,13 @@ export function ChoresHistogram({ entries, chores }: ChoresHistogramProps) {
               height={52}
               rx={6}
               ry={6}
-              fill="rgba(23, 28, 34, 0.92)"
-              stroke="rgba(255,255,255,0.2)"
+              fill="var(--graph-tooltip-bg)"
+              stroke="var(--graph-tooltip-border)"
             />
-            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="#ffffff">
+            <text x={tooltip.x + 10} y={tooltip.y + 20} fontSize="12" fill="var(--graph-tooltip-text)">
               {hoveredBar.name}
             </text>
-            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="#ffe9b0">
+            <text x={tooltip.x + 10} y={tooltip.y + 38} fontSize="12" fill="var(--graph-tooltip-accent-1)">
               {`Times Done: ${hoveredBar.count}`}
             </text>
           </g>
@@ -184,3 +184,4 @@ export function ChoresHistogram({ entries, chores }: ChoresHistogramProps) {
     </div>
   );
 }
+

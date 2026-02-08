@@ -33,6 +33,7 @@ interface FastingEntry extends BaseTrackerEntry {
 
 interface CarbsEntry extends BaseTrackerEntry {
   carbs: number;
+  notes: string;
 }
 
 interface CaloriesEntry extends BaseTrackerEntry {
@@ -356,7 +357,8 @@ function sanitizeData(value: unknown): AppData {
       }
       return {
         ...base,
-        carbs: parseRangedNumber(entry.carbs, 0, 500, 0)
+        carbs: parseRangedNumber(entry.carbs, 0, 500, 0),
+        notes: parseText(entry.notes)
       } satisfies CarbsEntry;
     })
     .filter((entry): entry is CarbsEntry => entry !== null);
@@ -608,9 +610,9 @@ async function writeDataFile(value: unknown): Promise<AppData> {
 function createMainWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1250,
-    height: 870,
-    minWidth: 360,
-    minHeight: 640,
+    height: 935,
+    minWidth: 600,
+    minHeight: 700,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
