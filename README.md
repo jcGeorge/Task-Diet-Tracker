@@ -1,6 +1,10 @@
 # Task & Diet Tracker
 
-Desktop app for tracking diet and daily habits with local JSON storage, import/export, and visual charts.
+Desktop app for tracking diet and daily habits with local JSON storage, import/export, and visual charts. 
+Includes sections and graphs for:
+weight, steps, carbs, calories
+workouts, fasting, mood, sleep, 
+chores, homework, substances, entertainment
 
 Built with Electron + React + Vite + TypeScript + Bootstrap.
 
@@ -8,6 +12,9 @@ Built with Electron + React + Vite + TypeScript + Bootstrap.
 
 ### Weight Progress
 ![Weight Chart](docs/images/weight_chart.png)
+
+### Settings
+![Settings Page](docs/images/settings.png)
 
 ### Carbs Entry
 ![Carb Entry](docs/images/carb_entry.png)

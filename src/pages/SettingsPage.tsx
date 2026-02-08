@@ -257,7 +257,7 @@ export function SettingsPage() {
                   {sectionVisibilityOrder.map((trackerKey) => {
                     const isVisible = !hiddenSections.includes(trackerKey);
                     return (
-                      <div key={trackerKey} className="col-12 col-sm-6 col-lg-4">
+                      <div key={trackerKey} className="col-12 col-sm-6 col-lg-3">
                         <div className="form-check form-switch">
                           <input
                             id={`section-visible-${trackerKey}`}
