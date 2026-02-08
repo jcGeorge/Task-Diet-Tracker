@@ -611,8 +611,8 @@ function createMainWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1250,
     height: 935,
-    minWidth: 600,
-    minHeight: 700,
+    minWidth: 800,
+    minHeight: 750,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
