@@ -123,9 +123,9 @@ export function MetaPage() {
     return parsed;
   };
 
-  const renderMetaListEditor = (listKey: MetaListKey) => (
+  const renderMetaListEditor = (listKey: MetaListKey, headingClassName = "h6 mb-2") => (
     <>
-      <h3 className="h6 mb-2">{metaLabels[listKey]}</h3>
+      <h3 className={headingClassName}>{metaLabels[listKey]}</h3>
       <form
         className="d-flex gap-2 mb-3"
         onSubmit={(event) => {
@@ -212,7 +212,7 @@ export function MetaPage() {
               </Link>
             </div>
             <p className="text-secondary mb-0 mt-2">
-              Manage list items used by Workouts, Homework Subjects and Students, Chores, Substances, and Entertainment.
+              Manage list items used by Weight, Workouts and more.
             </p>
           </div>
         </div>
@@ -392,7 +392,7 @@ export function MetaPage() {
         <div className="row g-3">
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">{renderMetaListEditor("workouts")}</div>
+              <div className="card-body">{renderMetaListEditor("workouts", "h5 mb-3")}</div>
             </div>
           </div>
 
@@ -409,19 +409,19 @@ export function MetaPage() {
 
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">{renderMetaListEditor("chores")}</div>
+              <div className="card-body">{renderMetaListEditor("chores", "h5 mb-3")}</div>
             </div>
           </div>
 
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">{renderMetaListEditor("substances")}</div>
+              <div className="card-body">{renderMetaListEditor("substances", "h5 mb-3")}</div>
             </div>
           </div>
 
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">{renderMetaListEditor("entertainment")}</div>
+              <div className="card-body">{renderMetaListEditor("entertainment", "h5 mb-3")}</div>
             </div>
           </div>
         </div>

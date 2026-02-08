@@ -1,26 +1,61 @@
-# Task & Diet Tracker (Groundwork)
+# Task & Diet Tracker
 
-Electron + React (Vite) + TypeScript starter focused on:
+Desktop app for tracking diet and daily habits with local JSON storage, import/export, and visual charts.
 
-- Bootstrap-based UI with built-in light/dark modes
-- Auburn/orange light theme styling
-- Responsive layout for desktop and mobile
-- Local JSON persistence through secure Electron IPC
-- JSON import/export from Settings
-- Shared date input (`MM/DD/YYYY` storage) across trackers and settings
-- Weight graph placeholder area (blank groundwork)
+Built with Electron + React + Vite + TypeScript + Bootstrap.
 
-## Run
+## Screenshots
+
+### Weight Progress
+![Weight Chart](docs/images/weight_chart.png)
+
+### Carb Entry
+![Carb Entry](docs/images/carb_entry.png)
+
+### Workouts Composition
+![Workouts Chart](docs/images/workouts_chart.png)
+
+## Features
+
+- Light and dark themes
+- Home hub with quick access to tracker/input pages
+- Dedicated input and tracker pages for diet/task categories
+- Metadata management (workouts, subjects, students, chores, substances, entertainment)
+- Multiple chart types (line, bar/stacked bar, histogram, pie/donut, mood box plot)
+- Local JSON persistence with import/export from Settings
+- Date-range filtering across tracker charts
+
+## Windows Install (From Releases)
+
+If you just want to use the app:
+
+1. Go to Releases:  
+   `https://github.com/jcGeorge/task_and_diet-tracker/releases`
+2. Download the latest Windows release asset (zip).
+3. Extract the zip.
+4. Run the installer inside it (`TaskDietTracker Setup...exe`) and complete the wizard.
+
+## Local Development
 
 1. Install dependencies:
-   - `npm install`
-2. Start development mode:
-   - `npm run dev`
+   `npm install`
+2. Run in development mode:
+   `npm run dev`
+3. Optional production compile (no installer):
+   `npm run build`
+
+## Build Windows Installer (NSIS)
+
+This builds the normal installer (not portable).
+
+1. Install dependencies:
+   `npm install`
+2. Build installer:
+   `npm run dist:win`
+3. Output:
+   `release-alt/`
 
 ## Data Storage
 
-User data is stored at:
-
-- Electron user data path + `task-weight-data.json`
-
-You can import/export this JSON from the Settings page.
+- App data is stored locally in `task-weight-data.json` under the app's user data directory.
+- Import/Export in Settings includes tracker data and metadata.
