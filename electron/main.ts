@@ -1,5 +1,4 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
-import { createHash } from "node:crypto";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 
@@ -145,29 +144,10 @@ const TRACKER_KEYS: TrackerKey[] = [
 const DISPLAY_DATE_REGEX = /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/;
 const DATA_FILE_NAME = "task-weight-data.json";
 const LEGACY_DATA_DIR_NAME = "task-weight-aggregator";
-const USER_DATA_NAMESPACE = "task-diet-tracker";
+const KNOWN_USER_DATA_DIR_NAMES = ["task-diet-tracker", "TaskDietTracker"];
 
 let mainWindow: BrowserWindow | null = null;
 let dataFilePath: string | null = null;
-const defaultUserDataPath = app.getPath("userData");
-
-function getRuntimeIdentity(): string {
-  const portableExecutablePath = process.env.PORTABLE_EXECUTABLE_FILE;
-  if (portableExecutablePath && portableExecutablePath.trim().length > 0) {
-    return portableExecutablePath.trim().toLowerCase();
-  }
-  return app.getPath("exe").toLowerCase();
-}
-
-function configureIsolatedUserDataPath(): void {
-  // Isolate Chromium profile/cache by build identity so different app versions can run side-by-side.
-  const identity = `${app.getVersion()}|${getRuntimeIdentity()}`;
-  const identityHash = createHash("sha1").update(identity).digest("hex").slice(0, 10);
-  const isolatedPath = path.join(app.getPath("appData"), USER_DATA_NAMESPACE, `${app.getVersion()}-${identityHash}`);
-  app.setPath("userData", isolatedPath);
-}
-
-configureIsolatedUserDataPath();
 
 function createDefaultData(): AppData {
   return {
@@ -262,6 +242,10 @@ function parseOptionalRangedNumber(value: unknown, min: number, max: number): nu
 
 function parseText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeJsonText(raw: string): string {
+  return raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw;
 }
 
 function parseStringList(value: unknown): string[] {
@@ -583,6 +567,52 @@ function sanitizeData(value: unknown): AppData {
   };
 }
 
+async function findDataMigrationCandidate(targetPath: string): Promise<string | null> {
+  const appDataPath = app.getPath("appData");
+  const currentUserDataDirName = path.basename(app.getPath("userData"));
+  const userDataDirNames = new Set<string>([currentUserDataDirName, ...KNOWN_USER_DATA_DIR_NAMES]);
+  const candidates = new Set<string>([path.join(appDataPath, LEGACY_DATA_DIR_NAME, DATA_FILE_NAME)]);
+
+  for (const dirName of userDataDirNames) {
+    const rootDir = path.join(appDataPath, dirName);
+    candidates.add(path.join(rootDir, DATA_FILE_NAME));
+
+    try {
+      const entries = await fs.readdir(rootDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) {
+          continue;
+        }
+        candidates.add(path.join(rootDir, entry.name, DATA_FILE_NAME));
+      }
+    } catch {
+      // Ignore missing directories while probing migration sources.
+    }
+  }
+
+  let newest: { filePath: string; mtimeMs: number } | null = null;
+
+  for (const candidate of candidates) {
+    if (path.normalize(candidate) === path.normalize(targetPath)) {
+      continue;
+    }
+
+    try {
+      const stat = await fs.stat(candidate);
+      if (!stat.isFile()) {
+        continue;
+      }
+      if (!newest || stat.mtimeMs > newest.mtimeMs) {
+        newest = { filePath: candidate, mtimeMs: stat.mtimeMs };
+      }
+    } catch {
+      // Ignore unreadable candidates and continue.
+    }
+  }
+
+  return newest?.filePath ?? null;
+}
+
 async function resolveDataFilePath(): Promise<string> {
   if (dataFilePath) {
     return dataFilePath;
@@ -594,28 +624,15 @@ async function resolveDataFilePath(): Promise<string> {
   try {
     await fs.access(dataFilePath);
   } catch {
-    const migrationCandidates = [
-      path.join(defaultUserDataPath, DATA_FILE_NAME),
-      path.join(app.getPath("appData"), LEGACY_DATA_DIR_NAME, DATA_FILE_NAME)
-    ];
-
-    let migrated = false;
-    for (const candidatePath of migrationCandidates) {
-      if (path.normalize(candidatePath) === path.normalize(dataFilePath)) {
-        continue;
-      }
-
-      try {
-        const raw = await fs.readFile(candidatePath, "utf8");
+    try {
+      const migrationSource = await findDataMigrationCandidate(dataFilePath);
+      if (migrationSource) {
+        const raw = await fs.readFile(migrationSource, "utf8");
         await fs.writeFile(dataFilePath, raw, "utf8");
-        migrated = true;
-        break;
-      } catch {
-        // Continue trying migration candidates.
+      } else {
+        await fs.writeFile(dataFilePath, JSON.stringify(createDefaultData(), null, 2), "utf8");
       }
-    }
-
-    if (!migrated) {
+    } catch {
       await fs.writeFile(dataFilePath, JSON.stringify(createDefaultData(), null, 2), "utf8");
     }
   }
@@ -625,7 +642,14 @@ async function resolveDataFilePath(): Promise<string> {
 
 async function readDataFile(): Promise<AppData> {
   const filePath = await resolveDataFilePath();
-  const raw = await fs.readFile(filePath, "utf8");
+  let raw = "";
+  try {
+    raw = normalizeJsonText(await fs.readFile(filePath, "utf8"));
+  } catch {
+    const fallback = createDefaultData();
+    await fs.writeFile(filePath, JSON.stringify(fallback, null, 2), "utf8");
+    return fallback;
+  }
 
   try {
     const parsed = JSON.parse(raw);
@@ -695,7 +719,7 @@ function registerIpc(): void {
     }
 
     try {
-      const raw = await fs.readFile(choice.filePaths[0], "utf8");
+      const raw = normalizeJsonText(await fs.readFile(choice.filePaths[0], "utf8"));
       const parsed = JSON.parse(raw);
       return writeDataFile(parsed);
     } catch {
