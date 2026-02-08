@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 
@@ -144,9 +145,29 @@ const TRACKER_KEYS: TrackerKey[] = [
 const DISPLAY_DATE_REGEX = /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/;
 const DATA_FILE_NAME = "task-weight-data.json";
 const LEGACY_DATA_DIR_NAME = "task-weight-aggregator";
+const USER_DATA_NAMESPACE = "task-diet-tracker";
 
 let mainWindow: BrowserWindow | null = null;
 let dataFilePath: string | null = null;
+const defaultUserDataPath = app.getPath("userData");
+
+function getRuntimeIdentity(): string {
+  const portableExecutablePath = process.env.PORTABLE_EXECUTABLE_FILE;
+  if (portableExecutablePath && portableExecutablePath.trim().length > 0) {
+    return portableExecutablePath.trim().toLowerCase();
+  }
+  return app.getPath("exe").toLowerCase();
+}
+
+function configureIsolatedUserDataPath(): void {
+  // Isolate Chromium profile/cache by build identity so different app versions can run side-by-side.
+  const identity = `${app.getVersion()}|${getRuntimeIdentity()}`;
+  const identityHash = createHash("sha1").update(identity).digest("hex").slice(0, 10);
+  const isolatedPath = path.join(app.getPath("appData"), USER_DATA_NAMESPACE, `${app.getVersion()}-${identityHash}`);
+  app.setPath("userData", isolatedPath);
+}
+
+configureIsolatedUserDataPath();
 
 function createDefaultData(): AppData {
   return {
@@ -573,11 +594,28 @@ async function resolveDataFilePath(): Promise<string> {
   try {
     await fs.access(dataFilePath);
   } catch {
-    const legacyPath = path.join(app.getPath("appData"), LEGACY_DATA_DIR_NAME, DATA_FILE_NAME);
-    try {
-      const legacyRaw = await fs.readFile(legacyPath, "utf8");
-      await fs.writeFile(dataFilePath, legacyRaw, "utf8");
-    } catch {
+    const migrationCandidates = [
+      path.join(defaultUserDataPath, DATA_FILE_NAME),
+      path.join(app.getPath("appData"), LEGACY_DATA_DIR_NAME, DATA_FILE_NAME)
+    ];
+
+    let migrated = false;
+    for (const candidatePath of migrationCandidates) {
+      if (path.normalize(candidatePath) === path.normalize(dataFilePath)) {
+        continue;
+      }
+
+      try {
+        const raw = await fs.readFile(candidatePath, "utf8");
+        await fs.writeFile(dataFilePath, raw, "utf8");
+        migrated = true;
+        break;
+      } catch {
+        // Continue trying migration candidates.
+      }
+    }
+
+    if (!migrated) {
       await fs.writeFile(dataFilePath, JSON.stringify(createDefaultData(), null, 2), "utf8");
     }
   }

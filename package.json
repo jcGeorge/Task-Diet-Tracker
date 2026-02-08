@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "com.taskdiettracker.app",
-    "productName": "Task & Diet Tracker",
+    "productName": "TaskDietTracker",
     "asar": true,
     "directories": {
       "output": "release"
@@ -43,7 +43,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Task & Diet Tracker"
+      "shortcutName": "TaskDietTracker"
     }
   },
   "dependencies": {
