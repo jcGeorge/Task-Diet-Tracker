@@ -9,7 +9,7 @@ Built with Electron + React + Vite + TypeScript + Bootstrap.
 ### Weight Progress
 ![Weight Chart](docs/images/weight_chart.png)
 
-### Carb Entry
+### Carbs Entry
 ![Carb Entry](docs/images/carb_entry.png)
 
 ### Workouts Composition
@@ -46,7 +46,7 @@ If you just want to use the app:
 
 ## Build Windows Installer (NSIS)
 
-This builds the normal installer (not portable).
+This builds the normal window installer.
 
 1. Install dependencies:
    `npm install`
