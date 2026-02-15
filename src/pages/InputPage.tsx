@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type 
 import { Link, Navigate, useParams } from "react-router-dom";
 import { CaloriesByDateList } from "../components/CaloriesByDateList";
 import { CarbsByDateList } from "../components/CarbsByDateList";
+import { WaterByDateList } from "../components/WaterByDateList";
 import { SharedDateInput } from "../components/SharedDateInput";
 import { TimeSelector } from "../components/TimeSelector";
 import { useAppData } from "../context/AppDataContext";
@@ -31,6 +32,7 @@ export function InputPage() {
   const [date, setDate] = useState(todayDisplayDate());
   const [weightLbs, setWeightLbs] = useState("");
   const [fastingHours, setFastingHours] = useState("");
+  const [waterValue, setWaterValue] = useState("");
   const [stepsValue, setStepsValue] = useState("");
   const [carbsValue, setCarbsValue] = useState("");
   const [carbsNotes, setCarbsNotes] = useState("");
@@ -191,6 +193,9 @@ export function InputPage() {
       case "steps":
         setStepsValue("");
         break;
+      case "water":
+        setWaterValue("");
+        break;
       case "carbs":
         setCarbsValue("");
         setCarbsNotes("");
@@ -270,6 +275,18 @@ export function InputPage() {
       addTrackerEntry("steps", { date, steps: parsed });
       resetNonDateFields("steps");
       showSuccess(`Steps entry added for ${date}.`);
+      return;
+    }
+
+    if (trackerKey === "water") {
+      const parsed = parseNumberInRange(waterValue, 0, 50);
+      if (parsed === null) {
+        showError("Water (liters) must be a number between 0 and 50.");
+        return;
+      }
+      addTrackerEntry("water", { date, liters: parsed, notes: "" });
+      resetNonDateFields("water");
+      showSuccess(`Water entry added for ${date}.`);
       return;
     }
 
@@ -484,6 +501,12 @@ export function InputPage() {
                 having to remember this throughout the day.
               </p>
             ) : null}
+            {trackerKey === "water" ? (
+              <p className="text-secondary mb-3">
+                Water aggregates multiple entries in the same day, so you can add data throughout the day as you drink it.
+                1 liter = 33.814 US fl oz.
+              </p>
+            ) : null}
 
             <SharedDateInput id="entry-date" label="Date" value={date} onChange={setDate} required allowDayStepper />
 
@@ -537,6 +560,24 @@ export function InputPage() {
                   step="any"
                   value={stepsValue}
                   onChange={(event) => setStepsValue(event.target.value)}
+                />
+              </div>
+            ) : null}
+
+            {trackerKey === "water" ? (
+              <div className="mb-3">
+                <label htmlFor="water-value" className="form-label fw-semibold">
+                  Water (liters)
+                </label>
+                <input
+                  id="water-value"
+                  type="number"
+                  className="form-control shared-date-input"
+                  min={0}
+                  max={50}
+                  step="any"
+                  value={waterValue}
+                  onChange={(event) => setWaterValue(event.target.value)}
                 />
               </div>
             ) : null}
@@ -971,6 +1012,8 @@ export function InputPage() {
             {trackerKey === "carbs" ? <CarbsByDateList date={date} entries={data.trackers.carbs} /> : null}
 
             {trackerKey === "calories" ? <CaloriesByDateList date={date} entries={data.trackers.calories} /> : null}
+
+            {trackerKey === "water" ? <WaterByDateList date={date} entries={data.trackers.water} /> : null}
 
             <hr className="entry-form-divider" />
 

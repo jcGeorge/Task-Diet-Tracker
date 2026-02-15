@@ -1,6 +1,7 @@
 export const trackerKeys = [
   "weight",
   "fasting",
+  "water",
   "carbs",
   "calories",
   "workouts",
@@ -36,6 +37,11 @@ export interface WeightEntry extends BaseTrackerEntry {
 
 export interface FastingEntry extends BaseTrackerEntry {
   hours: number;
+}
+
+export interface WaterEntry extends BaseTrackerEntry {
+  liters: number;
+  notes: string;
 }
 
 export interface CarbsEntry extends BaseTrackerEntry {
@@ -115,6 +121,7 @@ export interface MetaLists {
 export interface TrackerEntryByKey {
   weight: WeightEntry;
   fasting: FastingEntry;
+  water: WaterEntry;
   carbs: CarbsEntry;
   calories: CaloriesEntry;
   workouts: WorkoutEntry;
@@ -138,6 +145,7 @@ export interface AppSettings {
   weightGoalLbs: number | null;
   carbLimitPerDay: number | null;
   calorieLimitPerDay: number | null;
+  waterGoalPerDay: number | null;
   dailyStepsGoal: number | null;
   desiredSleepHours: number | null;
 }
@@ -153,6 +161,7 @@ export interface AppData {
 export const trackerLabels: Record<TrackerKey, string> = {
   weight: "Weight",
   fasting: "Fasting",
+  water: "Water",
   carbs: "Carbs",
   calories: "Calories",
   workouts: "Workouts",

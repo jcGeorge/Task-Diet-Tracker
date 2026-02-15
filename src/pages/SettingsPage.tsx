@@ -14,6 +14,7 @@ const sectionVisibilityOrder: TrackerKey[] = [
   "calories",
   "workouts",
   "fasting",
+  "water",
   "mood",
   "sleep",
   "cleaning",
@@ -34,6 +35,7 @@ function buildBackupDataBeforeDate(source: AppData, beforeDate: string): AppData
       trackers: {
         weight: [],
         fasting: [],
+        water: [],
         carbs: [],
         calories: [],
         workouts: [],
@@ -52,6 +54,7 @@ function buildBackupDataBeforeDate(source: AppData, beforeDate: string): AppData
   const trackers: AppData["trackers"] = {
     weight: source.trackers.weight.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
     fasting: source.trackers.fasting.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
+    water: source.trackers.water.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
     carbs: source.trackers.carbs.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
     calories: source.trackers.calories.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),
     workouts: source.trackers.workouts.filter((entry) => displayDateToIso(entry.date) < cutoffIsoDate),

@@ -257,6 +257,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       const nextTrackers: AppData["trackers"] = {
         weight: [],
         fasting: [],
+        water: [],
         carbs: [],
         calories: [],
         workouts: [],
@@ -289,6 +290,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
     setData((previous) => {
       const remainingWeight = previous.trackers.weight.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingFasting = previous.trackers.fasting.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
+      const remainingWater = previous.trackers.water.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingCarbs = previous.trackers.carbs.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingCalories = previous.trackers.calories.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
       const remainingWorkouts = previous.trackers.workouts.filter((entry) => displayDateToIso(entry.date) >= cutoffIsoDate);
@@ -304,6 +306,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
 
       removedCount += previous.trackers.weight.length - remainingWeight.length;
       removedCount += previous.trackers.fasting.length - remainingFasting.length;
+      removedCount += previous.trackers.water.length - remainingWater.length;
       removedCount += previous.trackers.carbs.length - remainingCarbs.length;
       removedCount += previous.trackers.calories.length - remainingCalories.length;
       removedCount += previous.trackers.workouts.length - remainingWorkouts.length;
@@ -322,6 +325,7 @@ export function AppDataProvider({ children }: PropsWithChildren) {
       const nextTrackers: AppData["trackers"] = {
         weight: remainingWeight,
         fasting: remainingFasting,
+        water: remainingWater,
         carbs: remainingCarbs,
         calories: remainingCalories,
         workouts: remainingWorkouts,

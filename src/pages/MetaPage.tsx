@@ -298,14 +298,17 @@ export function MetaPage() {
           </div>
         </div>
 
-        <div className="row g-3 mb-3">
-          <div className="col-12 col-lg-6 col-xl-3">
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">
-                <h2 className="h5 mb-3">Carb Limit Per Day</h2>
+        <div className="card border-0 shadow-sm mb-3">
+          <div className="card-body">
+            <h2 className="h5 mb-3">Limits &amp; Goals</h2>
+            <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-5 g-3">
+              <div className="col">
+                <label htmlFor="meta-carb-limit-per-day" className="form-label fw-semibold">
+                  Carb Limit (grams)
+                </label>
                 <input
                   id="meta-carb-limit-per-day"
-                  className="form-control shared-date-input"
+                  className="form-control"
                   type="number"
                   inputMode="decimal"
                   min="0"
@@ -318,16 +321,14 @@ export function MetaPage() {
                   }}
                 />
               </div>
-            </div>
-          </div>
 
-          <div className="col-12 col-lg-6 col-xl-3">
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">
-                <h2 className="h5 mb-3">Calorie Limit Per Day</h2>
+              <div className="col">
+                <label htmlFor="meta-calorie-limit-per-day" className="form-label fw-semibold">
+                  Calorie Limit
+                </label>
                 <input
                   id="meta-calorie-limit-per-day"
-                  className="form-control shared-date-input"
+                  className="form-control"
                   type="number"
                   inputMode="decimal"
                   min="0"
@@ -340,16 +341,34 @@ export function MetaPage() {
                   }}
                 />
               </div>
-            </div>
-          </div>
 
-          <div className="col-12 col-lg-6 col-xl-3">
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">
-                <h2 className="h5 mb-3">Daily Steps Goal</h2>
+              <div className="col">
+                <label htmlFor="meta-water-goal-per-day" className="form-label fw-semibold">
+                  Water Goal (liters)
+                </label>
+                <input
+                  id="meta-water-goal-per-day"
+                  className="form-control"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.1"
+                  value={data.settings.waterGoalPerDay ?? ""}
+                  onChange={(event) => {
+                    updateSettings({
+                      waterGoalPerDay: parseDecimal(event.target.value)
+                    });
+                  }}
+                />
+              </div>
+
+              <div className="col">
+                <label htmlFor="meta-daily-steps-goal" className="form-label fw-semibold">
+                  Steps Goal
+                </label>
                 <input
                   id="meta-daily-steps-goal"
-                  className="form-control shared-date-input"
+                  className="form-control"
                   type="number"
                   inputMode="decimal"
                   min="0"
@@ -362,16 +381,14 @@ export function MetaPage() {
                   }}
                 />
               </div>
-            </div>
-          </div>
 
-          <div className="col-12 col-lg-6 col-xl-3">
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-body">
-                <h2 className="h5 mb-3">Desired Rest (hours)</h2>
+              <div className="col">
+                <label htmlFor="meta-desired-sleep-hours" className="form-label fw-semibold">
+                  Rest Goal (hours)
+                </label>
                 <input
                   id="meta-desired-sleep-hours"
-                  className="form-control shared-date-input"
+                  className="form-control"
                   type="number"
                   inputMode="decimal"
                   min="3"

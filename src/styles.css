@@ -19,6 +19,8 @@ html[data-bs-theme="light"] {
   --graph-tooltip-accent-2: #0b566f;
   --graph-slice-stroke-active: rgba(31, 42, 50, 0.7);
   --graph-slice-stroke: rgba(31, 42, 50, 0.26);
+  --last-use-row-odd: color-mix(in srgb, var(--app-input-bg) 68%, #ffffff);
+  --last-use-row-even: color-mix(in srgb, var(--app-card-bg) 58%, #ffffff);
 }
 
 html[data-bs-theme="dark"] {
@@ -42,6 +44,8 @@ html[data-bs-theme="dark"] {
   --graph-tooltip-accent-2: #d8f5ff;
   --graph-slice-stroke-active: rgba(255, 255, 255, 0.88);
   --graph-slice-stroke: rgba(0, 0, 0, 0.22);
+  --last-use-row-odd: color-mix(in srgb, var(--app-input-bg) 78%, #2f3943);
+  --last-use-row-even: color-mix(in srgb, var(--app-card-bg) 78%, #1d242c);
 }
 
 body {
@@ -70,6 +74,9 @@ body {
 
 .app-toolbar {
   gap: 0.75rem;
+  flex-wrap: nowrap;
+  align-items: center;
+  min-width: 0;
 }
 
 .header-left-btn {
@@ -81,11 +88,17 @@ body {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .tracker-select {
-  width: 154px;
-  min-width: 154px;
+  width: clamp(5.5rem, 18vw, 154px);
+  min-width: 5.5rem;
+  max-width: 154px;
+  flex: 0 1 154px;
 }
 
 .form-select.tracker-select-active,
@@ -565,24 +578,51 @@ html[data-bs-theme="light"] .form-control[type="date"]::-webkit-calendar-picker-
   background-size: 22px 22px;
 }
 
+.last-use-list {
+  border: 1px solid var(--app-border);
+  border-radius: 0.55rem;
+  overflow: hidden;
+}
+
+.last-use-row {
+  padding: 0.7rem 0.95rem;
+  border-color: color-mix(in srgb, var(--app-border) 74%, transparent);
+}
+
+.last-use-row:nth-child(odd) {
+  background-color: var(--last-use-row-odd);
+}
+
+.last-use-row:nth-child(even) {
+  background-color: var(--last-use-row-even);
+}
+
+.time-since-value {
+  white-space: nowrap;
+  text-align: right;
+}
+
 @media (max-width: 767px) {
   .app-body {
     padding: 0.75rem;
   }
 
   .app-toolbar {
-    align-items: stretch;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .toolbar-controls {
-    width: 100%;
-    margin-left: 0;
+    width: auto;
+    margin-left: auto;
+    min-width: 0;
+    gap: 0.45rem;
   }
 
   .tracker-select {
-    width: auto;
-    min-width: 0;
-    flex: 1;
+    width: clamp(5rem, 17vw, 8rem);
+    min-width: 5rem;
+    flex: 0 1 8rem;
   }
 
   .homework-chart-student-select,

@@ -5,6 +5,7 @@ import { promises as fs } from "node:fs";
 type TrackerKey =
   | "weight"
   | "fasting"
+  | "water"
   | "carbs"
   | "calories"
   | "workouts"
@@ -29,6 +30,11 @@ interface WeightEntry extends BaseTrackerEntry {
 
 interface FastingEntry extends BaseTrackerEntry {
   hours: number;
+}
+
+interface WaterEntry extends BaseTrackerEntry {
+  liters: number;
+  notes: string;
 }
 
 interface CarbsEntry extends BaseTrackerEntry {
@@ -94,6 +100,7 @@ interface AppSettings {
   weightGoalLbs: number | null;
   carbLimitPerDay: number | null;
   calorieLimitPerDay: number | null;
+  waterGoalPerDay: number | null;
   dailyStepsGoal: number | null;
   desiredSleepHours: number | null;
 }
@@ -112,6 +119,7 @@ interface AppData {
   trackers: {
     weight: WeightEntry[];
     fasting: FastingEntry[];
+    water: WaterEntry[];
     carbs: CarbsEntry[];
     calories: CaloriesEntry[];
     workouts: WorkoutEntry[];
@@ -129,6 +137,7 @@ interface AppData {
 const TRACKER_KEYS: TrackerKey[] = [
   "weight",
   "fasting",
+  "water",
   "carbs",
   "calories",
   "workouts",
@@ -160,6 +169,7 @@ function createDefaultData(): AppData {
       weightGoalLbs: null,
       carbLimitPerDay: null,
       calorieLimitPerDay: null,
+      waterGoalPerDay: null,
       dailyStepsGoal: null,
       desiredSleepHours: null
     },
@@ -174,6 +184,7 @@ function createDefaultData(): AppData {
     trackers: {
       weight: [],
       fasting: [],
+      water: [],
       carbs: [],
       calories: [],
       workouts: [],
@@ -316,6 +327,7 @@ function sanitizeData(value: unknown): AppData {
   const weightGoalLbs = parseOptionalNonNegativeNumber(settingsRaw.weightGoalLbs);
   const carbLimitPerDay = parseOptionalNonNegativeNumber(settingsRaw.carbLimitPerDay);
   const calorieLimitPerDay = parseOptionalNonNegativeNumber(settingsRaw.calorieLimitPerDay);
+  const waterGoalPerDay = parseOptionalNonNegativeNumber(settingsRaw.waterGoalPerDay);
   const dailyStepsGoal = parseOptionalNonNegativeNumber(settingsRaw.dailyStepsGoal);
   const desiredSleepHours = parseOptionalRangedNumber(settingsRaw.desiredSleepHours, 3, 12);
 
@@ -353,6 +365,20 @@ function sanitizeData(value: unknown): AppData {
       } satisfies FastingEntry;
     })
     .filter((entry): entry is FastingEntry => entry !== null);
+
+  const water = getRawEntryList(trackersRaw, "water")
+    .map((entry) => {
+      const base = parseBaseEntry(entry);
+      if (!base || !isRecord(entry)) {
+        return null;
+      }
+      return {
+        ...base,
+        liters: parseRangedNumber(entry.liters, 0, 50, 0),
+        notes: parseText(entry.notes)
+      } satisfies WaterEntry;
+    })
+    .filter((entry): entry is WaterEntry => entry !== null);
 
   const carbs = getRawEntryList(trackersRaw, "carbs")
     .map((entry) => {
@@ -545,6 +571,7 @@ function sanitizeData(value: unknown): AppData {
       weightGoalLbs,
       carbLimitPerDay,
       calorieLimitPerDay,
+      waterGoalPerDay,
       dailyStepsGoal,
       desiredSleepHours
     },
@@ -552,6 +579,7 @@ function sanitizeData(value: unknown): AppData {
     trackers: {
       weight,
       fasting,
+      water,
       carbs,
       calories,
       workouts,
@@ -673,8 +701,8 @@ function createMainWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1250,
     height: 935,
-    minWidth: 800,
-    minHeight: 750,
+    minWidth: 700,
+    minHeight: 620,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),

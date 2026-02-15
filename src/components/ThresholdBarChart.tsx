@@ -166,7 +166,7 @@ export function ThresholdBarChart({
           y1={thresholdY}
           x2={CHART_WIDTH - PADDING.right}
           y2={thresholdY}
-          stroke="#dc3545"
+          stroke="#198754"
           strokeWidth={2}
           strokeDasharray="6 4"
         />
@@ -179,8 +179,8 @@ export function ThresholdBarChart({
             Math.abs(entry.value - threshold) < 0.000001
               ? "#6c757d"
               : entry.value < threshold
-                ? "#198754"
-                : "#dc3545";
+                ? "#dc3545"
+                : "#198754";
           return (
             <g key={entry.id}>
               <rect

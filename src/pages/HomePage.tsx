@@ -10,6 +10,7 @@ const hubOrder: TrackerKey[] = [
   "calories",
   "workouts",
   "fasting",
+  "water",
   "mood",
   "sleep",
   "cleaning",

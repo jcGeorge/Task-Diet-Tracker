@@ -10,6 +10,7 @@ import { MoodBoxPlot } from "../components/MoodBoxPlot";
 import { SleepStackedChart } from "../components/SleepStackedChart";
 import { ThresholdBarChart } from "../components/ThresholdBarChart";
 import { SubstancesHistogram } from "../components/SubstancesHistogram";
+import { WaterStackedChart } from "../components/WaterStackedChart";
 import { WorkoutsCompositionChart } from "../components/WorkoutsCompositionChart";
 import { WeightGraph } from "../components/WeightGraph";
 import { useAppData } from "../context/AppDataContext";
@@ -27,6 +28,88 @@ interface IsoRange {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MS_PER_WEEK = 7 * MS_PER_DAY;
+
+function daysInMonthUtc(year: number, monthIndex: number): number {
+  return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+}
+
+function parseIsoDateToUtcDate(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+  const [yearPart, monthPart, dayPart] = value.split("-");
+  const year = Number(yearPart);
+  const monthIndex = Number(monthPart) - 1;
+  const day = Number(dayPart);
+  if (!Number.isInteger(year) || !Number.isInteger(monthIndex) || !Number.isInteger(day)) {
+    return null;
+  }
+  if (monthIndex < 0 || monthIndex > 11) {
+    return null;
+  }
+  if (day < 1 || day > daysInMonthUtc(year, monthIndex)) {
+    return null;
+  }
+  return new Date(Date.UTC(year, monthIndex, day));
+}
+
+function getTodayUtcDate(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+function getYearsAndDaysSinceIsoDate(isoDate: string, todayUtc: Date): { years: number; days: number } | null {
+  const lastUseDate = parseIsoDateToUtcDate(isoDate);
+  if (!lastUseDate) {
+    return null;
+  }
+  if (lastUseDate.getTime() > todayUtc.getTime()) {
+    return { years: 0, days: 0 };
+  }
+
+  const startYear = lastUseDate.getUTCFullYear();
+  const startMonth = lastUseDate.getUTCMonth();
+  const startDay = lastUseDate.getUTCDate();
+  const endYear = todayUtc.getUTCFullYear();
+
+  let years = endYear - startYear;
+  let anniversaryYear = startYear + years;
+  let anniversaryDay = Math.min(startDay, daysInMonthUtc(anniversaryYear, startMonth));
+  let anniversary = new Date(Date.UTC(anniversaryYear, startMonth, anniversaryDay));
+  if (anniversary.getTime() > todayUtc.getTime()) {
+    years -= 1;
+    anniversaryYear = startYear + years;
+    anniversaryDay = Math.min(startDay, daysInMonthUtc(anniversaryYear, startMonth));
+    anniversary = new Date(Date.UTC(anniversaryYear, startMonth, anniversaryDay));
+  }
+
+  const days = Math.max(0, Math.floor((todayUtc.getTime() - anniversary.getTime()) / MS_PER_DAY));
+  return { years, days };
+}
+
+function formatYearsAndDays(value: { years: number; days: number }): string {
+  const daysLabel = value.days === 1 ? "day" : "days";
+  if (value.years <= 0) {
+    return `${value.days} ${daysLabel}`;
+  }
+
+  const yearsLabel = value.years === 1 ? "year" : "years";
+  if (value.days <= 0) {
+    return `${value.years} ${yearsLabel}`;
+  }
+
+  return `${value.years} ${yearsLabel}, ${value.days} ${daysLabel}`;
+}
+
+function formatSummaryNumber(value: number): string {
+  if (Math.abs(value) >= 1000) {
+    return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+  if (Number.isInteger(value)) {
+    return String(value);
+  }
+  return value.toFixed(2).replace(/\.?0+$/, "");
+}
 
 function parseDisplayDateToDate(value: string): Date | null {
   const iso = displayDateToIso(value);
@@ -202,6 +285,9 @@ export function TrackerPage() {
     if (trackerKey === "carbs") {
       return getEntryIsoRange(data.trackers.carbs) ?? fallbackRange;
     }
+    if (trackerKey === "water") {
+      return getEntryIsoRange(data.trackers.water) ?? fallbackRange;
+    }
     if (trackerKey === "fasting") {
       return getEntryIsoRange(data.trackers.fasting) ?? fallbackRange;
     }
@@ -284,6 +370,7 @@ export function TrackerPage() {
     () => ({
       weight: filterByAppliedDate(data.trackers.weight),
       fasting: filterByAppliedDate(data.trackers.fasting),
+      water: filterByAppliedDate(data.trackers.water),
       carbs: filterByAppliedDate(data.trackers.carbs),
       calories: filterByAppliedDate(data.trackers.calories),
       workouts: filterByAppliedDate(data.trackers.workouts),
@@ -297,11 +384,51 @@ export function TrackerPage() {
     }),
     [data.trackers, appliedStartIso, appliedEndIso]
   );
+  const substancesTimeSinceLastUse = useMemo(() => {
+    if (trackerKey !== "substances") {
+      return [];
+    }
+
+    const latestUseById = new Map<string, string>();
+    for (const entry of data.trackers.substances) {
+      const iso = displayDateToIso(entry.date);
+      if (!iso) {
+        continue;
+      }
+
+      const uniqueSubstanceIds = new Set(entry.substanceIds);
+      for (const substanceId of uniqueSubstanceIds) {
+        const existingIso = latestUseById.get(substanceId);
+        if (!existingIso || iso > existingIso) {
+          latestUseById.set(substanceId, iso);
+        }
+      }
+    }
+
+    const todayUtc = getTodayUtcDate();
+    return data.meta.substances.map((substance) => {
+      const lastUseIso = latestUseById.get(substance.id);
+      if (!lastUseIso) {
+        return {
+          id: substance.id,
+          name: substance.name,
+          sinceText: "N/A"
+        };
+      }
+      const elapsed = getYearsAndDaysSinceIsoDate(lastUseIso, todayUtc);
+      return {
+        id: substance.id,
+        name: substance.name,
+        sinceText: elapsed ? formatYearsAndDays(elapsed) : "N/A"
+      };
+    });
+  }, [trackerKey, data.trackers.substances, data.meta.substances]);
 
   const showGraphDateControls =
     trackerKey === "weight" ||
     trackerKey === "steps" ||
     trackerKey === "carbs" ||
+    trackerKey === "water" ||
     trackerKey === "fasting" ||
     trackerKey === "calories" ||
     trackerKey === "sleep" ||
@@ -369,6 +496,31 @@ export function TrackerPage() {
         </div>
       ) : null}
 
+      {trackerKey === "substances" ? (
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <h2 className="h5 mb-3">Time Since Last Use</h2>
+              {data.meta.substances.length === 0 ? (
+                <p className="text-secondary mb-0">Add substance options in Metadata to track time since last use.</p>
+              ) : (
+                <ul className="list-group last-use-list">
+                  {substancesTimeSinceLastUse.map((item) => (
+                    <li
+                      key={item.id}
+                      className="list-group-item last-use-row d-flex justify-content-between align-items-center gap-2"
+                    >
+                      <span className="fw-semibold">{item.name}</span>
+                      <span className="text-secondary time-since-value">{item.sinceText}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {trackerKey === "cleaning" ? (
         <div className="col-12">
           <div className="card border-0 shadow-sm">
@@ -411,6 +563,24 @@ export function TrackerPage() {
                   notes: entry.notes
                 }))}
                 threshold={data.settings.carbLimitPerDay}
+              />
+              {renderGraphDateControls()}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {trackerKey === "water" ? (
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <WaterStackedChart
+                entries={filteredChartTrackers.water.map((entry) => ({
+                  id: entry.id,
+                  date: entry.date,
+                  liters: entry.liters
+                }))}
+                threshold={data.settings.waterGoalPerDay}
               />
               {renderGraphDateControls()}
             </div>
@@ -569,6 +739,7 @@ export function TrackerPage() {
                   const weightLbs = typeof item.weightLbs === "number" ? item.weightLbs : 0;
                   const hours = typeof item.hours === "number" ? item.hours : 0;
                   const carbs = typeof item.carbs === "number" ? item.carbs : 0;
+                  const liters = typeof item.liters === "number" ? item.liters : 0;
                   const calories = typeof item.calories === "number" ? item.calories : 0;
                   const steps = typeof item.steps === "number" ? item.steps : 0;
                   const sleepTime = typeof item.sleepTime === "string" ? item.sleepTime : "";
@@ -607,29 +778,31 @@ export function TrackerPage() {
 
                   let primarySummary = "";
                   if (trackerKey === "weight") {
-                    primarySummary = `Weight (lbs): ${weightLbs}`;
+                    primarySummary = `Weight (lbs): ${formatSummaryNumber(weightLbs)}`;
                   } else if (trackerKey === "fasting") {
                     primarySummary = `Hours: ${hours}`;
                   } else if (trackerKey === "carbs") {
-                    primarySummary = `Carbs (g): ${carbs}`;
+                    primarySummary = `Carbs (g): ${formatSummaryNumber(carbs)}`;
+                  } else if (trackerKey === "water") {
+                    primarySummary = `Water (L): ${formatSummaryNumber(liters)}`;
                   } else if (trackerKey === "calories") {
-                    primarySummary = `Calories: ${calories}`;
+                    primarySummary = `Calories: ${formatSummaryNumber(calories)}`;
                   } else if (trackerKey === "steps") {
-                    primarySummary = `Steps: ${steps}`;
+                    primarySummary = `Steps: ${formatSummaryNumber(steps)}`;
                   } else if (trackerKey === "sleep") {
-                    primarySummary = `Sleep: ${sleepTime || "(unset)"} - ${wakeTime || "(unset)"}`;
+                    primarySummary = `${sleepTime || "(unset)"} - ${wakeTime || "(unset)"}`;
                   } else if (trackerKey === "mood") {
-                    primarySummary = `Mood Start: ${moodStart} | Mood End: ${moodEnd}`;
+                    primarySummary = `Mood Start: ${formatSummaryNumber(moodStart)} | Mood End: ${formatSummaryNumber(moodEnd)}`;
                   } else if (trackerKey === "workouts") {
                     primarySummary = workoutSummary;
                   } else if (trackerKey === "homework") {
                     primarySummary = `Subject: ${(subjectNames[subjectId] as string | undefined) ?? "Unknown subject"} | Student: ${(childNames[childId] as string | undefined) ?? "Unknown student"} | Minutes: ${minutes}`;
                   } else if (trackerKey === "cleaning") {
-                    primarySummary = `Chores: ${choresSummary}`;
+                    primarySummary = choresSummary;
                   } else if (trackerKey === "substances") {
-                    primarySummary = `Substances: ${substancesSummary}`;
+                    primarySummary = substancesSummary;
                   } else if (trackerKey === "entertainment") {
-                    primarySummary = `Entertainment: ${entertainmentSummary}`;
+                    primarySummary = entertainmentSummary;
                   }
 
                   return (

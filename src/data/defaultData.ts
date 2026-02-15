@@ -4,6 +4,7 @@ function buildEmptyTrackers(): { [K in TrackerKey]: TrackerEntryByKey[K][] } {
   return {
     weight: [],
     fasting: [],
+    water: [],
     carbs: [],
     calories: [],
     workouts: [],
@@ -46,6 +47,7 @@ export function createDefaultData(): AppData {
       weightGoalLbs: null,
       carbLimitPerDay: null,
       calorieLimitPerDay: null,
+      waterGoalPerDay: null,
       dailyStepsGoal: null,
       desiredSleepHours: null
     },
